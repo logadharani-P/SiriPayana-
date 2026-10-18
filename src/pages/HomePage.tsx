@@ -72,7 +72,7 @@ export default function HomePage() {
       <section className="hero">
         <div className="hero__bg">
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Hampi_viread.jpg/1920px-Hampi_viread.jpg"
+            src="https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?w=1600&q=80"
             alt="Karnataka landscape - Hampi ruins"
             loading="eager"
           />
@@ -271,7 +271,7 @@ export default function HomePage() {
             </FadeInSection>
             <FadeInSection className="stories__preview" delay={0.2}>
               <div className="stories__card">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Mysore_Palace_Morning.jpg/640px-Mysore_Palace_Morning.jpg" alt="Mysuru Palace" loading="lazy" />
+                <img src="https://images.unsplash.com/photo-1600100561600-44d5e3cba921?w=640&q=80" alt="Mysuru Palace" loading="lazy" />
                 <div className="stories__card-content">
                   <h3>Mysuru Palace</h3>
                   <p>Built in 1912, the Indo-Saracenic palace blends Hindu, Muslim, Rajput, and Gothic architecture...</p>
