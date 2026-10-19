@@ -253,6 +253,7 @@ const TripContext = createContext<TripContextType | null>(null);
 
 export const PLAN_STEPS = [
   { path: '/plan/preferences', label: 'Preferences' },
+  { path: '/plan/compass', label: 'Compass' },
   { path: '/plan/recommendations', label: 'Destinations' },
   { path: '/plan/package', label: 'Package' },
   { path: '/plan/transport', label: 'Transport' },

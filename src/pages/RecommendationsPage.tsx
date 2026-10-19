@@ -1,38 +1,60 @@
-import { useState, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useTrip } from '../context/TripContext';
-import { destinations, getCategoryIcon } from '../data/destinations';
+import { useApp } from '../context/AppContext';
+import { destinations, getCategoryIcon, getDestinationsByRegion } from '../data/destinations';
 import type { SelectedDestination } from '../context/TripContext';
 import StepIndicator from '../components/StepIndicator';
 import '../components/StepIndicator.css';
 
+const REGION_MAP: Record<string, 'north' | 'south' | 'east' | 'west'> = {
+  north: 'north',
+  south: 'south',
+  west: 'west',
+  central: 'east',
+};
+
 export default function RecommendationsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { trip, dispatch, nextStep, prevStep } = useTrip();
+  const { state } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const selectedRegion = searchParams.get('region');
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ role: string; text: string; isDemo?: boolean }[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatIsDemo, setChatIsDemo] = useState(true);
 
   // Generate recommendations based on preferences
   const recommended = useMemo(() => {
     const prefs = trip.preferences;
-    return destinations
+    let pool = destinations;
+
+    // Filter by region if selected from compass
+    if (selectedRegion && REGION_MAP[selectedRegion]) {
+      const regionDests = getDestinationsByRegion(REGION_MAP[selectedRegion]);
+      if (regionDests.length > 0) {
+        pool = regionDests;
+      }
+    }
+
+    return pool
       .map(dest => {
         let score = 0;
         if (prefs.interests.includes(dest.category as any)) score += 10;
         if (prefs.interests.includes('mixed')) score += 5;
         if (prefs.travelStyle === 'budget' && (dest.localExpenseEstimate || 0) < 2000) score += 3;
         if (prefs.travelStyle === 'premium' && (dest.localExpenseEstimate || 0) > 2000) score += 3;
-        // Duration match
         const durationDays = parseInt(dest.recommendedDuration) || 1;
         if (durationDays <= prefs.duration) score += 2;
         return { dest, score, reason: getReasonText(dest, prefs) };
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 12);
-  }, [trip.preferences]);
+  }, [trip.preferences, selectedRegion]);
 
   const isSelected = (id: string) => trip.selectedDestinations.some(d => d.destinationId === id);
 
@@ -48,16 +70,44 @@ export default function RecommendationsPage() {
     }
   };
 
-  const handleChatSend = () => {
-    if (!chatInput.trim()) return;
+  const handleChatSend = async () => {
+    if (!chatInput.trim() || chatLoading) return;
     const q = chatInput.trim();
     setChatMessages(prev => [...prev, { role: 'user', text: q }]);
     setChatInput('');
-    // Demo AI response
-    setTimeout(() => {
-      const response = getDemoResponse(q);
-      setChatMessages(prev => [...prev, { role: 'ai', text: response }]);
-    }, 600);
+    setChatLoading(true);
+
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-recommend`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          type: 'chat',
+          message: q,
+          preferences: trip.preferences,
+          language: i18n.language,
+          userName: state.profileName,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`Request failed (${response.status})`);
+      const data = await response.json();
+      if (!data.text) throw new Error('No response text');
+
+      setChatMessages(prev => [...prev, { role: 'ai', text: data.text, isDemo: data.isDemo }]);
+      setChatIsDemo(!!data.isDemo);
+    } catch (err) {
+      // Fall back to local demo response
+      const demoResponse = getLocalDemoResponse(q, trip.preferences, state.profileName);
+      setChatMessages(prev => [...prev, { role: 'ai', text: demoResponse, isDemo: true }]);
+      setChatIsDemo(true);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   const handleContinue = () => {
@@ -96,7 +146,7 @@ export default function RecommendationsPage() {
 
           {/* Recommendations grid */}
           <h2 style={{ marginBottom: 'var(--space-4)', fontFamily: 'var(--font-display)', color: 'var(--color-forest-dark)' }}>
-            🎯 Recommended for You
+            🎯 Recommended for You{selectedRegion ? ` — ${selectedRegion.charAt(0).toUpperCase() + selectedRegion.slice(1)} Karnataka` : ''}
           </h2>
           <div className="reco-grid">
             {recommended.map(({ dest, reason }, i) => (
@@ -127,6 +177,7 @@ export default function RecommendationsPage() {
           <div className="reco-chat" style={{ marginTop: 'var(--space-10)' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--color-forest-dark)', marginBottom: 'var(--space-4)' }}>
               💬 Ask the AI Assistant
+              {chatIsDemo && <span className="demo-badge" style={{ marginLeft: 'var(--space-2)' }}>Demo mode</span>}
             </h2>
             <div className="reco-chat__messages">
               {chatMessages.length === 0 && (
@@ -137,19 +188,27 @@ export default function RecommendationsPage() {
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`reco-chat__msg reco-chat__msg--${msg.role}`}>
                   {msg.role === 'ai' && <span className="reco-chat__avatar">🧭</span>}
-                  <p>{msg.text}</p>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
                 </div>
               ))}
+              {chatLoading && (
+                <div className="reco-chat__msg reco-chat__msg--ai">
+                  <span className="reco-chat__avatar">🧭</span>
+                  <p style={{ fontStyle: 'italic', color: 'var(--color-gray-400)' }}>Thinking…</p>
+                </div>
+              )}
             </div>
             <form className="reco-chat__input" onSubmit={e => { e.preventDefault(); handleChatSend(); }}>
               <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)}
-                placeholder="Ask about Karnataka destinations..." className="form-input" />
-              <button type="submit" className="btn btn--primary btn--sm" disabled={!chatInput.trim()}>Send</button>
+                placeholder="Ask about Karnataka destinations..." className="form-input" disabled={chatLoading} />
+              <button type="submit" className="btn btn--primary btn--sm" disabled={!chatInput.trim() || chatLoading}>
+                {chatLoading ? '…' : 'Send'}
+              </button>
             </form>
           </div>
 
           <div className="plan-page__actions">
-            <button className="btn btn--outline" onClick={() => { prevStep(); navigate('/plan/preferences'); }}>
+            <button className="btn btn--outline" onClick={() => { prevStep(); navigate('/plan/compass'); }}>
               ← {t('common.back')}
             </button>
             <button className="btn btn--primary btn--lg" onClick={handleContinue}
@@ -199,12 +258,14 @@ function getReasonText(dest: typeof destinations[0], prefs: any): string {
   return reasons.join(' • ');
 }
 
-function getDemoResponse(query: string): string {
+function getLocalDemoResponse(query: string, prefs: any, userName?: string): string {
   const q = query.toLowerCase();
-  if (q.includes('hampi')) return '🏛️ Hampi is perfect for heritage lovers! It was the capital of the Vijayanagara Empire. I recommend spending 2-3 days here. Best visited October-February.';
-  if (q.includes('beach') || q.includes('gokarna')) return '🏖️ For beaches, I recommend Gokarna (Om Beach, Kudle Beach) for a quieter experience, or Murudeshwar for the famous Shiva statue. Both are on the west coast.';
-  if (q.includes('hill') || q.includes('coorg') || q.includes('chikmagalur')) return '⛰️ Coorg and Chikmagalur are excellent hill station choices! Coorg offers coffee plantations and Abbey Falls, while Chikmagalur has Mullayanagiri peak.';
-  if (q.includes('waterfall') || q.includes('jog')) return '💧 Jog Falls is Indias second-highest waterfall — most spectacular during monsoon (July-Oct). Abbey Falls in Coorg is beautiful year-round.';
-  if (q.includes('budget')) return '💰 For a budget trip, consider: Hampi (₹1,500/day), Gokarna (₹1,800/day), or Nandi Hills (day trip from Bangalore, ₹500).';
-  return `🧭 Great question! Based on your preferences, I'd suggest exploring Karnataka's ${query.includes('nature') ? 'Western Ghats region' : 'diverse attractions'}. Would you like specific destination suggestions?`;
+  const name = userName || 'traveler';
+  if (q.includes('hampi')) return 'Hampi is a UNESCO World Heritage Site and the ruins of the Vijayanagara Empire (1336-1565 CE). I recommend 2-3 days. Key sights: Virupaksha Temple, Vittala Temple, Lotus Mahal, and Matanga Hill for sunset. Best season: October to February.';
+  if (q.includes('beach') || q.includes('gokarna')) return 'For beaches, Gokarna is ideal — Om Beach, Kudle Beach, and Half Moon Beach. Murudeshwar combines a beach visit with the world\'s second-tallest Shiva statue.';
+  if (q.includes('hill') || q.includes('coorg') || q.includes('chikmagalur') || q.includes('chikkamagaluru')) return 'Coorg offers coffee plantations, Abbey Falls, and Tibetan settlements. Chikkamagaluru has Mullayanagiri, Karnataka\'s highest peak. Both need 2-3 days.';
+  if (q.includes('waterfall') || q.includes('jog')) return 'Jog Falls is India\'s second-highest waterfall at 253m, most spectacular July-October. Shivanasamudra is a great day trip from Bengaluru.';
+  if (q.includes('budget') || q.includes('cheap')) return `For a budget trip from ${prefs.startingCity}: Hampi (₹1,500/day), Gokarna (₹1,800/day), or Nandi Hills (day trip, ₹500).`;
+  if (q.includes('temple') || q.includes('heritage')) return 'Karnataka\'s temple heritage: Hampi (Vijayanagara), Pattadakal (UNESCO), Belur & Halebidu (Hoysala), Badami (cave temples), and Mysuru Palace.';
+  return `Great question, ${name}! Based on your interest in ${prefs.interests.join(', ') || 'general travel'}, I'd suggest exploring the destinations on this page. Feel free to ask about specific places, seasons, or logistics!`;
 }

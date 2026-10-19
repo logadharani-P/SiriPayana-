@@ -12,6 +12,7 @@ import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
 import PreferencesPage from './pages/PreferencesPage';
+import CompassPage from './pages/CompassPage';
 import RecommendationsPage from './pages/RecommendationsPage';
 import PackagePage from './pages/PackagePage';
 import TransportPage from './pages/TransportPage';
@@ -56,6 +57,7 @@ function AppContent() {
           <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
           <Route path="/dashboard/preferences" element={<RequireAuth><DashboardPage /></RequireAuth>} />
           <Route path="/plan/preferences" element={<RequireAuth><PreferencesPage /></RequireAuth>} />
+          <Route path="/plan/compass" element={<RequireAuth><CompassPage /></RequireAuth>} />
           <Route path="/plan/recommendations" element={<RequireAuth><RecommendationsPage /></RequireAuth>} />
           <Route path="/plan/package" element={<RequireAuth><PackagePage /></RequireAuth>} />
           <Route path="/plan/transport" element={<RequireAuth><TransportPage /></RequireAuth>} />
