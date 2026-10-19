@@ -8,7 +8,7 @@ import './Navbar.css';
 
 export default function Navbar() {
   const { t, i18n } = useTranslation();
-  const { state, logout } = useApp();
+  const { state, signOut } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
@@ -171,7 +171,7 @@ export default function Navbar() {
                       <Link to="/dashboard/preferences" className="navbar__dropdown-item" onClick={() => setProfileOpen(false)}>
                         {t('nav.profile')}
                       </Link>
-                      <button className="navbar__dropdown-item navbar__dropdown-item--danger" onClick={() => { logout(); setProfileOpen(false); navigate('/'); }}>
+                      <button className="navbar__dropdown-item navbar__dropdown-item--danger" onClick={() => { signOut(); setProfileOpen(false); navigate('/'); }}>
                         {t('nav.logout')}
                       </button>
                     </motion.div>
@@ -256,7 +256,7 @@ export default function Navbar() {
               </div>
               <div className="navbar__mobile-auth">
                 {state.isAuthenticated ? (
-                  <button className="btn btn--outline" style={{ width: '100%' }} onClick={() => { logout(); setMobileOpen(false); navigate('/'); }}>
+                  <button className="btn btn--outline" style={{ width: '100%' }} onClick={() => { signOut(); setMobileOpen(false); navigate('/'); }}>
                     {t('nav.logout')}
                   </button>
                 ) : (

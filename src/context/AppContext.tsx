@@ -1,12 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-
-// Types
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: string;
-}
+import { supabase } from '../lib/supabaseClient';
+import type { User } from '@supabase/supabase-js';
 
 export interface UserPreferences {
   startingLocation: string;
@@ -22,45 +16,24 @@ export interface SavedDestination {
   savedAt: string;
 }
 
-export interface Itinerary {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  destinations: ItineraryStop[];
-  totalBudget: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ItineraryStop {
-  destinationId: string;
-  day: number;
-  timeSlot: 'morning' | 'afternoon' | 'evening';
-  duration: string;
-  notes: string;
-}
-
 interface AppState {
   user: User | null;
+  profileName: string;
   preferences: UserPreferences;
   favorites: string[];
   savedDestinations: SavedDestination[];
-  itineraries: Itinerary[];
   isAuthenticated: boolean;
+  isLoadingAuth: boolean;
   toast: { message: string; type: 'success' | 'error' | 'info' } | null;
 }
 
 type AppAction =
-  | { type: 'LOGIN'; payload: User }
-  | { type: 'LOGOUT' }
+  | { type: 'SET_USER'; payload: { user: User | null; profileName: string } }
+  | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_PREFERENCES'; payload: Partial<UserPreferences> }
   | { type: 'TOGGLE_FAVORITE'; payload: string }
   | { type: 'SAVE_DESTINATION'; payload: SavedDestination }
   | { type: 'REMOVE_SAVED_DESTINATION'; payload: string }
-  | { type: 'ADD_ITINERARY'; payload: Itinerary }
-  | { type: 'UPDATE_ITINERARY'; payload: Itinerary }
-  | { type: 'DELETE_ITINERARY'; payload: string }
   | { type: 'SET_TOAST'; payload: AppState['toast'] }
   | { type: 'LOAD_STATE'; payload: Partial<AppState> };
 
@@ -75,20 +48,27 @@ const defaultPreferences: UserPreferences = {
 
 const initialState: AppState = {
   user: null,
+  profileName: '',
   preferences: defaultPreferences,
   favorites: [],
   savedDestinations: [],
-  itineraries: [],
   isAuthenticated: false,
+  isLoadingAuth: true,
   toast: null,
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'LOGIN':
-      return { ...state, user: action.payload, isAuthenticated: true };
-    case 'LOGOUT':
-      return { ...initialState };
+    case 'SET_USER':
+      return {
+        ...state,
+        user: action.payload.user,
+        profileName: action.payload.profileName,
+        isAuthenticated: !!action.payload.user,
+        isLoadingAuth: false,
+      };
+    case 'SET_LOADING':
+      return { ...state, isLoadingAuth: action.payload };
     case 'SET_PREFERENCES':
       return { ...state, preferences: { ...state.preferences, ...action.payload } };
     case 'TOGGLE_FAVORITE': {
@@ -96,30 +76,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const favorites = state.favorites.includes(id)
         ? state.favorites.filter(f => f !== id)
         : [...state.favorites, id];
+      persistLocalState({ ...state, favorites });
       return { ...state, favorites };
     }
-    case 'SAVE_DESTINATION':
-      return {
-        ...state,
-        savedDestinations: [...state.savedDestinations.filter(s => s.destinationId !== action.payload.destinationId), action.payload],
-      };
-    case 'REMOVE_SAVED_DESTINATION':
-      return {
-        ...state,
-        savedDestinations: state.savedDestinations.filter(s => s.destinationId !== action.payload),
-      };
-    case 'ADD_ITINERARY':
-      return { ...state, itineraries: [...state.itineraries, action.payload] };
-    case 'UPDATE_ITINERARY':
-      return {
-        ...state,
-        itineraries: state.itineraries.map(it => it.id === action.payload.id ? action.payload : it),
-      };
-    case 'DELETE_ITINERARY':
-      return {
-        ...state,
-        itineraries: state.itineraries.filter(it => it.id !== action.payload),
-      };
+    case 'SAVE_DESTINATION': {
+      const savedDestinations = [...state.savedDestinations.filter(s => s.destinationId !== action.payload.destinationId), action.payload];
+      const next = { ...state, savedDestinations };
+      persistLocalState(next);
+      return next;
+    }
+    case 'REMOVE_SAVED_DESTINATION': {
+      const savedDestinations = state.savedDestinations.filter(s => s.destinationId !== action.payload);
+      const next = { ...state, savedDestinations };
+      persistLocalState(next);
+      return next;
+    }
     case 'SET_TOAST':
       return { ...state, toast: action.payload };
     case 'LOAD_STATE':
@@ -132,129 +103,113 @@ function appReducer(state: AppState, action: AppAction): AppState {
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
-  login: (name: string, email: string, password: string) => boolean;
-  register: (name: string, email: string, password: string) => boolean;
-  logout: () => void;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (name: string, email: string, password: string) => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'siripayana-app-state';
-const USERS_KEY = 'siripayana-users';
+const LOCAL_KEY = 'siripayana-app-local';
 
-function loadState(): Partial<AppState> {
+interface LocalPersistState {
+  favorites: string[];
+  savedDestinations: SavedDestination[];
+  preferences: UserPreferences;
+}
+
+function loadLocalState(): Partial<AppState> {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) return JSON.parse(saved);
   } catch {}
   return {};
 }
 
-function saveState(state: AppState) {
+function persistLocalState(state: AppState) {
   try {
-    const { toast, ...rest } = state;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
+    const subset: LocalPersistState = {
+      favorites: state.favorites,
+      savedDestinations: state.savedDestinations,
+      preferences: state.preferences,
+    };
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(subset));
   } catch {}
 }
 
-interface StoredUser {
-  id: string;
-  name: string;
-  email: string;
-  passwordHash: string;
-  createdAt: string;
-}
-
-function getUsers(): StoredUser[] {
-  try {
-    const data = localStorage.getItem(USERS_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch { return []; }
-}
-
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-// Simple hash function for demo purposes (NOT production-grade)
-async function hashPassword(pw: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pw + 'siripayana-salt');
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+function getProfileName(user: User): string {
+  const meta = user.user_metadata as Record<string, unknown> | null;
+  if (meta?.full_name && typeof meta.full_name === 'string') return meta.full_name;
+  if (meta?.name && typeof meta.name === 'string') return meta.name;
+  return user.email?.split('@')[0] || 'Traveler';
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Load persisted state on mount
   useEffect(() => {
-    const saved = loadState();
+    const saved = loadLocalState();
     if (saved && Object.keys(saved).length > 0) {
       dispatch({ type: 'LOAD_STATE', payload: saved });
     }
   }, []);
 
-  // Save state on changes
   useEffect(() => {
-    if (state.user || state.favorites.length || state.itineraries.length || state.savedDestinations.length) {
-      saveState(state);
-    }
-  }, [state.user, state.favorites, state.savedDestinations, state.itineraries, state.preferences]);
+    // Restore session on mount
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        dispatch({ type: 'SET_USER', payload: { user: session.user, profileName: getProfileName(session.user) } });
+      } else {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    })();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      (async () => {
+        if (session?.user) {
+          dispatch({ type: 'SET_USER', payload: { user: session.user, profileName: getProfileName(session.user) } });
+        } else {
+          dispatch({ type: 'SET_USER', payload: { user: null, profileName: '' } });
+        }
+      })();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     dispatch({ type: 'SET_TOAST', payload: { message, type } });
     setTimeout(() => dispatch({ type: 'SET_TOAST', payload: null }), 4000);
   };
 
-  const login = (name: string, email: string, password: string): boolean => {
-    const users = getUsers();
-    // For demo: find by email
-    hashPassword(password).then(hash => {
-      const user = users.find(u => u.email === email.toLowerCase());
-      if (user && user.passwordHash === hash) {
-        dispatch({ type: 'LOGIN', payload: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt } });
-        showToast('Signed in successfully!', 'success');
-      } else if (user) {
-        showToast('Invalid password.', 'error');
-      } else {
-        showToast('No account found with this email.', 'error');
-      }
-    });
-    return true;
+  const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    return { error: null };
   };
 
-  const register = (name: string, email: string, password: string): boolean => {
-    const users = getUsers();
-    if (users.find(u => u.email === email.toLowerCase())) {
-      showToast('An account with this email already exists.', 'error');
-      return false;
+  const signUp = async (name: string, email: string, password: string): Promise<{ error: string | null }> => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } },
+    });
+    if (error) return { error: error.message };
+    if (data.user && !data.session) {
+      return { error: 'Check your email to confirm your account before signing in.' };
     }
-    hashPassword(password).then(hash => {
-      const newUser: StoredUser = {
-        id: crypto.randomUUID(),
-        name,
-        email: email.toLowerCase(),
-        passwordHash: hash,
-        createdAt: new Date().toISOString(),
-      };
-      saveUsers([...users, newUser]);
-      dispatch({ type: 'LOGIN', payload: { id: newUser.id, name: newUser.name, email: newUser.email, createdAt: newUser.createdAt } });
-      showToast('Account created successfully!', 'success');
-    });
-    return true;
+    return { error: null };
   };
 
-  const logout = () => {
-    dispatch({ type: 'LOGOUT' });
-    localStorage.removeItem(STORAGE_KEY);
+  const signOut = async () => {
+    await supabase.auth.signOut();
     showToast('Signed out successfully.', 'info');
   };
 
   return (
-    <AppContext.Provider value={{ state, dispatch, login, register, logout, showToast }}>
+    <AppContext.Provider value={{ state, dispatch, signIn, signUp, signOut, showToast }}>
       {children}
     </AppContext.Provider>
   );

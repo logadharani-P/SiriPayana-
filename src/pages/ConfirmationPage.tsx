@@ -1,19 +1,124 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useTrip } from '../context/TripContext';
+import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabaseClient';
 import StepIndicator from '../components/StepIndicator';
 import '../components/StepIndicator.css';
 
 export default function ConfirmationPage() {
   const { t } = useTranslation();
-  const { trip, resetTrip } = useTrip();
+  const { trip, resetTrip, dispatch } = useTrip();
+  const { state, showToast } = useApp();
   const navigate = useNavigate();
+
+  const [saving, setSaving] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!state.user) {
+        setSaving(false);
+        setError('You must be signed in to save your trip.');
+        return;
+      }
+
+      const tripName = trip.tripName || `${trip.selectedDestinations.length} destination trip`;
+      const { error: saveError } = await supabase.from('travel_plans').insert({
+        trip_name: tripName,
+        trip_data: trip,
+        status: 'complete',
+        total_budget: trip.budget.total,
+        destinations_count: trip.selectedDestinations.length,
+      });
+
+      if (cancelled) return;
+
+      if (saveError) {
+        setError(saveError.message);
+        setSaving(false);
+        return;
+      }
+
+      dispatch({ type: 'MARK_SAVED' });
+      setSaved(true);
+      setSaving(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleRetry = () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    (async () => {
+      if (!state.user) {
+        setSaving(false);
+        setError('You must be signed in to save your trip.');
+        return;
+      }
+      const tripName = trip.tripName || `${trip.selectedDestinations.length} destination trip`;
+      const { error: saveError } = await supabase.from('travel_plans').insert({
+        trip_name: tripName,
+        trip_data: trip,
+        status: 'complete',
+        total_budget: trip.budget.total,
+        destinations_count: trip.selectedDestinations.length,
+      });
+      if (saveError) {
+        setError(saveError.message);
+        setSaving(false);
+        return;
+      }
+      dispatch({ type: 'MARK_SAVED' });
+      setSaved(true);
+      setSaving(false);
+    })();
+  };
 
   const handleNewTrip = () => {
     resetTrip();
     navigate('/plan/preferences');
   };
+
+  if (saving) {
+    return (
+      <div className="plan-page">
+        <div className="container plan-page__body" style={{ paddingTop: 'calc(var(--nav-height) + var(--space-10))' }}>
+          <StepIndicator />
+          <div style={{ textAlign: 'center', padding: 'var(--space-16) 0' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>💾</div>
+            <h2>Saving your trip…</h2>
+            <p style={{ color: 'var(--color-gray-500)' }}>Please wait while we save your travel plan.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="plan-page">
+        <div className="container plan-page__body" style={{ paddingTop: 'calc(var(--nav-height) + var(--space-10))' }}>
+          <StepIndicator />
+          <div style={{ textAlign: 'center', padding: 'var(--space-16) 0', maxWidth: '520px', margin: '0 auto' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>⚠️</div>
+            <h2>Could not save your trip</h2>
+            <p style={{ color: 'var(--color-gray-600)', marginBottom: 'var(--space-6)' }}>{error}</p>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn--primary btn--lg" onClick={handleRetry}>Retry</button>
+              <button className="btn btn--outline btn--lg" onClick={() => navigate('/plan/summary')}>Back to Summary</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="plan-page">
@@ -46,6 +151,11 @@ export default function ConfirmationPage() {
             {trip.lastSaved && (
               <p className="confirmation__saved-time">
                 Saved at {new Date(trip.lastSaved).toLocaleString()}
+              </p>
+            )}
+            {saved && (
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gray-400)', marginTop: 'var(--space-2)' }}>
+                Your trip plan has been saved to your account. This is a travel plan, not a booking.
               </p>
             )}
           </div>
@@ -87,10 +197,10 @@ export default function ConfirmationPage() {
             <h3>{t('confirmation.whatNext')}</h3>
             <div className="confirmation__steps">
               {[
-                { icon: '📧', text: t('confirmation.step1') },
-                { icon: '🚆', text: t('confirmation.step2') },
-                { icon: '💾', text: t('confirmation.step3') },
-                { icon: '📤', text: t('confirmation.step4') },
+                { icon: '💾', text: 'Your trip plan is saved to your dashboard.' },
+                { icon: '🚆', text: 'Use the transport booking links to reserve tickets separately.' },
+                { icon: '📋', text: 'View your saved trip anytime from the dashboard.' },
+                { icon: '🗺️', text: 'Start a new trip whenever you are ready.' },
               ].map((step, i) => (
                 <motion.div key={i} className="confirmation__step"
                   initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}

@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useApp } from './context/AppContext';
+import { TripProvider } from './context/TripContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Toast from './components/Toast';
@@ -10,6 +11,13 @@ import DestinationPage from './pages/DestinationPage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
+import PreferencesPage from './pages/PreferencesPage';
+import RecommendationsPage from './pages/RecommendationsPage';
+import PackagePage from './pages/PackagePage';
+import TransportPage from './pages/TransportPage';
+import ItineraryPage from './pages/ItineraryPage';
+import SummaryPage from './pages/SummaryPage';
+import ConfirmationPage from './pages/ConfirmationPage';
 
 import './i18n';
 import './styles/design-system.css';
@@ -23,6 +31,14 @@ function ScrollToTop() {
   return null;
 }
 
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { state } = useApp();
+  if (!state.isAuthenticated) {
+    return <Navigate to="/signin" replace />;
+  }
+  return <>{children}</>;
+}
+
 function AppContent() {
   return (
     <>
@@ -34,10 +50,19 @@ function AppContent() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/destinations/:slug" element={<DestinationPage />} />
           <Route path="/signin" element={<AuthPage />} />
+          <Route path="/login" element={<Navigate to="/signin" replace />} />
           <Route path="/register" element={<AuthPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/preferences" element={<DashboardPage />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+          <Route path="/dashboard/preferences" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+          <Route path="/plan/preferences" element={<RequireAuth><PreferencesPage /></RequireAuth>} />
+          <Route path="/plan/recommendations" element={<RequireAuth><RecommendationsPage /></RequireAuth>} />
+          <Route path="/plan/package" element={<RequireAuth><PackagePage /></RequireAuth>} />
+          <Route path="/plan/transport" element={<RequireAuth><TransportPage /></RequireAuth>} />
+          <Route path="/plan/itinerary" element={<RequireAuth><ItineraryPage /></RequireAuth>} />
+          <Route path="/plan/summary" element={<RequireAuth><SummaryPage /></RequireAuth>} />
+          <Route path="/plan/confirmation" element={<RequireAuth><ConfirmationPage /></RequireAuth>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <Footer />
@@ -50,7 +75,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProvider>
-        <AppContent />
+        <TripProvider>
+          <AppContent />
+        </TripProvider>
       </AppProvider>
     </BrowserRouter>
   );

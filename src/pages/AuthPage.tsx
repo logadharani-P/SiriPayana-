@@ -7,16 +7,18 @@ import './AuthPage.css';
 
 export default function AuthPage() {
   const { t } = useTranslation();
-  const { login, register } = useApp();
+  const { signIn, signUp, showToast } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
-  const isLogin = location.pathname === '/signin';
+  const isLogin = location.pathname === '/signin' || location.pathname === '/login';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -30,15 +32,39 @@ export default function AuthPage() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!validate()) return;
-    if (isLogin) {
-      login(name, email, password);
-    } else {
-      register(name, email, password);
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          setErrors({ form: error });
+          showToast(error, 'error');
+          return;
+        }
+        showToast('Signed in successfully!', 'success');
+        navigate('/plan/preferences');
+      } else {
+        const { error } = await signUp(name, email, password);
+        if (error) {
+          setErrors({ form: error });
+          showToast(error, 'error');
+          return;
+        }
+        showToast('Account created successfully!', 'success');
+        navigate('/plan/preferences');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setErrors({ form: msg });
+      showToast(msg, 'error');
+    } finally {
+      setLoading(false);
     }
-    setTimeout(() => navigate('/dashboard'), 500);
   };
 
   return (
@@ -54,29 +80,35 @@ export default function AuthPage() {
           {!isLogin && (
             <div className="form-group">
               <label className="form-label">{t('auth.fullName')}</label>
-              <input type="text" className={`form-input ${errors.name ? 'form-input--error' : ''}`} value={name} onChange={e => setName(e.target.value)} placeholder={t('auth.fullName')} />
+              <input type="text" className={`form-input ${errors.name ? 'form-input--error' : ''}`} value={name} onChange={e => setName(e.target.value)} placeholder={t('auth.fullName')} disabled={loading} />
               {errors.name && <p className="form-error">{errors.name}</p>}
             </div>
           )}
           <div className="form-group">
             <label className="form-label">{t('auth.email')}</label>
-            <input type="email" className={`form-input ${errors.email ? 'form-input--error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} placeholder={t('auth.email')} />
+            <input type="email" className={`form-input ${errors.email ? 'form-input--error' : ''}`} value={email} onChange={e => setEmail(e.target.value)} placeholder={t('auth.email')} disabled={loading} />
             {errors.email && <p className="form-error">{errors.email}</p>}
           </div>
           <div className="form-group">
             <label className="form-label">{t('auth.password')}</label>
-            <input type="password" className={`form-input ${errors.password ? 'form-input--error' : ''}`} value={password} onChange={e => setPassword(e.target.value)} placeholder={t('auth.password')} />
+            <div style={{ position: 'relative' }}>
+              <input type={showPassword ? 'text' : 'password'} className={`form-input ${errors.password ? 'form-input--error' : ''}`} value={password} onChange={e => setPassword(e.target.value)} placeholder={t('auth.password')} disabled={loading} style={{ paddingRight: '3rem' }} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle password visibility" style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--color-gray-500)' }}>
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
             {errors.password && <p className="form-error">{errors.password}</p>}
           </div>
           {!isLogin && (
             <div className="form-group">
               <label className="form-label">{t('auth.confirmPassword')}</label>
-              <input type="password" className={`form-input ${errors.confirmPw ? 'form-input--error' : ''}`} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t('auth.confirmPassword')} />
+              <input type={showPassword ? 'text' : 'password'} className={`form-input ${errors.confirmPw ? 'form-input--error' : ''}`} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t('auth.confirmPassword')} disabled={loading} />
               {errors.confirmPw && <p className="form-error">{errors.confirmPw}</p>}
             </div>
           )}
-          <button type="submit" className="btn btn--primary" style={{ width: '100%' }}>
-            {isLogin ? t('auth.signIn') : t('auth.signUp')}
+          {errors.form && <div className="form-error" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', background: 'var(--color-error-light, #fef2f2)', border: '1px solid var(--color-error, #ef4444)' }}>{errors.form}</div>}
+          <button type="submit" className="btn btn--primary" style={{ width: '100%' }} disabled={loading}>
+            {loading ? 'Please wait…' : (isLogin ? t('auth.signIn') : t('auth.signUp'))}
           </button>
         </form>
 
