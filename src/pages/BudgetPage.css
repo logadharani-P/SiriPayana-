@@ -1,0 +1,182 @@
+/* ============================================================
+   Budget Page — Step 6 Itemized Cost Breakdown Styles
+   ============================================================ */
+
+.budget-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 1.2fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.budget-kpi-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.budget-kpi-icon {
+  font-size: 1.6rem;
+  margin-bottom: var(--space-1);
+}
+
+.budget-kpi-label {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.budget-kpi-val {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  color: var(--color-forest-dark);
+}
+
+.budget-kpi-card--total {
+  background: linear-gradient(135deg, var(--color-forest-dark) 0%, var(--color-forest) 100%);
+  color: var(--color-white);
+  border-color: var(--color-forest-dark);
+  box-shadow: 0 8px 24px rgba(45, 90, 61, 0.2);
+}
+
+.budget-status-pill {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-bold);
+  margin-top: var(--space-2);
+}
+
+.budget-status-pill--est {
+  background: rgba(196, 152, 42, 0.12);
+  color: #b45309;
+}
+
+.budget-status-pill--direct {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.budget-block {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.budget-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.budget-block__header h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  color: var(--color-forest-dark);
+}
+
+.budget-subtotal {
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--color-forest);
+}
+
+.budget-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.budget-table th {
+  background: var(--color-white);
+  color: var(--color-gray-500);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-3) var(--space-6);
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.budget-table td {
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-gray-50);
+  color: var(--color-gray-700);
+  vertical-align: middle;
+}
+
+.budget-table tr:last-child td {
+  border-bottom: none;
+}
+
+.budget-grand-total-banner {
+  background: linear-gradient(135deg, var(--color-forest-dark) 0%, var(--color-forest) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-8);
+  margin-bottom: var(--space-8);
+  box-shadow: 0 8px 30px rgba(45, 90, 61, 0.25);
+}
+
+.budget-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-gray-200);
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.budget-next-btn {
+  background: var(--color-gold);
+  color: var(--color-forest-dark);
+  font-weight: var(--font-bold);
+  border: none;
+  box-shadow: 0 4px 16px rgba(196, 152, 42, 0.35);
+  transition: all var(--transition-fast);
+}
+
+.budget-next-btn:hover {
+  background: var(--color-gold-light);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(196, 152, 42, 0.45);
+}
+
+@media (max-width: 1024px) {
+  .budget-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .budget-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .budget-grand-total-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+  .budget-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

@@ -50,7 +50,9 @@ export default function Navbar() {
 
   const navLinks = [
     { to: '/', label: t('nav.home') },
+    { to: '/dashboard', label: '🧭 Four Directions' },
     { to: '/explore', label: t('nav.explore') },
+    { to: '/onboarding', label: '📋 Plan Trip' },
     { to: '/#how-it-works', label: t('nav.howItWorks'), isAnchor: true },
     { to: '/#about', label: t('nav.about'), isAnchor: true },
   ];

@@ -1,6 +1,10 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+<<<<<<< HEAD
 import { AppProvider, useApp } from './context/AppContext';
+=======
+import { AppProvider } from './context/AppContext';
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
 import { TripProvider } from './context/TripContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -9,7 +13,13 @@ import HomePage from './pages/HomePage';
 import ExplorePage from './pages/ExplorePage';
 import DestinationPage from './pages/DestinationPage';
 import AuthPage from './pages/AuthPage';
+import OnboardingPage from './pages/OnboardingPage';
 import DashboardPage from './pages/DashboardPage';
+import TransportPage from './pages/TransportPage';
+import HotelPage from './pages/HotelPage';
+import BudgetPage from './pages/BudgetPage';
+import PaymentPage from './pages/PaymentPage';
+import ConfirmationPage from './pages/ConfirmationPage';
 import ChatPage from './pages/ChatPage';
 import PreferencesPage from './pages/PreferencesPage';
 import CompassPage from './pages/CompassPage';
@@ -47,12 +57,46 @@ function AppContent() {
       <Navbar />
       <main>
         <Routes>
+          {/* Main Landing & Exploration */}
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/destinations/:slug" element={<DestinationPage />} />
+
+          {/* Authentication */}
           <Route path="/signin" element={<AuthPage />} />
           <Route path="/login" element={<Navigate to="/signin" replace />} />
           <Route path="/register" element={<AuthPage />} />
+<<<<<<< HEAD
+=======
+
+          {/* Complete 8-Step Travel Planning Workflow */}
+          {/* Step 1: Onboarding Questionnaire (1 question per page) */}
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/plan/preferences" element={<OnboardingPage />} />
+
+          {/* Step 2 & 3: Four-Direction Karnataka Dashboard & Multi-Destination Selection */}
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard/preferences" element={<DashboardPage />} />
+          <Route path="/plan/recommendations" element={<DashboardPage />} />
+
+          {/* Step 4: Transportation Booking */}
+          <Route path="/plan/transport" element={<TransportPage />} />
+
+          {/* Step 5: Hotel Booking */}
+          <Route path="/plan/hotels" element={<HotelPage />} />
+
+          {/* Step 6: Itemized Trip Budget Summary with Mandatory Working Next Button */}
+          <Route path="/plan/budget" element={<BudgetPage />} />
+          <Route path="/plan/summary" element={<BudgetPage />} />
+
+          {/* Step 7: Payment & Review (Demo mode simulation vs Production mode) */}
+          <Route path="/plan/payment" element={<PaymentPage />} />
+
+          {/* Step 8: Thank You Page with Downloadable PDF Travel Pass */}
+          <Route path="/plan/confirmation" element={<ConfirmationPage />} />
+
+          {/* AI Travel Assistant Chat */}
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
           <Route path="/dashboard/preferences" element={<RequireAuth><DashboardPage /></RequireAuth>} />

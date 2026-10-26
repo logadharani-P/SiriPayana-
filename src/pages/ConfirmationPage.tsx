@@ -1,15 +1,24 @@
+<<<<<<< HEAD
 import { useState, useEffect } from 'react';
+=======
+import { useState } from 'react';
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useTrip } from '../context/TripContext';
 import { useApp } from '../context/AppContext';
+<<<<<<< HEAD
 import { supabase } from '../lib/supabaseClient';
+=======
+import { generateTravelPassPDF } from '../utils/travelPassPdf';
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
 import StepIndicator from '../components/StepIndicator';
-import '../components/StepIndicator.css';
+import './ConfirmationPage.css';
 
 export default function ConfirmationPage() {
   const { t } = useTranslation();
+<<<<<<< HEAD
   const { trip, resetTrip, dispatch } = useTrip();
   const { state, showToast } = useApp();
   const navigate = useNavigate();
@@ -79,11 +88,33 @@ export default function ConfirmationPage() {
       setSaved(true);
       setSaving(false);
     })();
+=======
+  const { trip, resetTrip, goToStep } = useTrip();
+  const { state, showToast } = useApp();
+  const navigate = useNavigate();
+
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+
+  const travelers = Math.max(trip.preferences.adults + trip.preferences.children, 1);
+  const selectedTransport = trip.transportOptions.filter(t => t.selected);
+
+  const handleDownloadPDF = () => {
+    try {
+      setPdfDownloading(true);
+      generateTravelPassPDF(trip, state.user?.name || 'Valued Traveller');
+      showToast('SiriPayana Travel Pass PDF downloaded successfully!', 'success');
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      showToast('Failed to download PDF. Please try again.', 'error');
+    } finally {
+      setTimeout(() => setPdfDownloading(false), 1000);
+    }
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
   };
 
   const handleNewTrip = () => {
     resetTrip();
-    navigate('/plan/preferences');
+    navigate('/onboarding');
   };
 
   if (saving) {
@@ -124,34 +155,133 @@ export default function ConfirmationPage() {
     <div className="plan-page">
       <div className="plan-page__header plan-page__header--success">
         <div className="container">
-          <h1>🎉 {t('confirmation.title')}</h1>
-          <p>{t('confirmation.subtitle')}</p>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gold-light)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)', fontWeight: 'var(--font-bold)' }}>
+            Step 8 • Journey Confirmed
+          </span>
+          <h1>🎉 Karnataka Travel Pass Issued!</h1>
+          <p>
+            Your travel itinerary reference is ready. Download your pass and start your journey across Karnataka.
+          </p>
         </div>
       </div>
+
       <div className="container plan-page__body">
         <StepIndicator />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="confirmation"
+          transition={{ duration: 0.4 }}
+          className="pass-container"
         >
-          <div className="confirmation__hero">
-            <motion.div
-              className="confirmation__check"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
-            >
-              ✅
-            </motion.div>
-            <h2 className="confirmation__title">{t('confirmation.thankYou')}</h2>
-            <p className="confirmation__subtitle">{t('confirmation.tripSaved')}</p>
-            {trip.lastSaved && (
-              <p className="confirmation__saved-time">
-                Saved at {new Date(trip.lastSaved).toLocaleString()}
+          {/* Main Printable / Digital Travel Pass Card */}
+          <div className="travel-pass-card">
+            {/* Top Pass Header */}
+            <div className="travel-pass-card__header">
+              <div className="pass-brand">
+                <span className="pass-logo">🧭</span>
+                <div>
+                  <h2>SiriPayana Travel Pass</h2>
+                  <span>Official Karnataka Tourism Itinerary Companion</span>
+                </div>
+              </div>
+              <div className="pass-ref-badge">
+                <span className="demo-tag">DEMO PASS</span>
+                <strong>{trip.bookingReference || 'SP-KA-2026-DEMO-9482'}</strong>
+              </div>
+            </div>
+
+            {/* Traveler & Route Matrix */}
+            <div className="pass-meta-grid">
+              <div className="pass-meta-cell">
+                <span className="pass-meta-label">Primary Traveller</span>
+                <strong className="pass-meta-val">{state.user?.name || 'Karnataka Explorer'}</strong>
+                <span className="pass-meta-sub">{trip.preferences.adults} Adults{trip.preferences.children > 0 ? `, ${trip.preferences.children} Children` : ''}</span>
+              </div>
+              <div className="pass-meta-cell">
+                <span className="pass-meta-label">Dates & Pacing</span>
+                <strong className="pass-meta-val">{trip.preferences.startDate} → {trip.preferences.endDate}</strong>
+                <span className="pass-meta-sub">{trip.preferences.duration} Days ({Math.max(1, trip.preferences.duration - 1)} Nights)</span>
+              </div>
+              <div className="pass-meta-cell">
+                <span className="pass-meta-label">Starting Point</span>
+                <strong className="pass-meta-val">{trip.preferences.startingCity || 'Bengaluru'}</strong>
+                <span className="pass-meta-sub">Origin Transit Hub</span>
+              </div>
+              <div className="pass-meta-cell">
+                <span className="pass-meta-label">Estimated Budget</span>
+                <strong className="pass-meta-val" style={{ color: 'var(--color-forest-dark)' }}>₹{trip.budget.total.toLocaleString()}</strong>
+                <span className="pass-meta-sub">≈ ₹{trip.budget.perPerson.toLocaleString()} / person</span>
+              </div>
+            </div>
+
+            {/* Selected Destinations Section */}
+            <div className="pass-section">
+              <h3 className="pass-section-title">
+                📍 Confirmed Destinations ({trip.selectedDestinations.length} Places)
+              </h3>
+              <div className="pass-dests-grid">
+                {trip.selectedDestinations.map((d, idx) => (
+                  <div key={d.destinationId} className="pass-dest-item">
+                    <span className="pass-dest-num">{idx + 1}</span>
+                    <img src={d.imageUrl} alt={d.name} className="pass-dest-img" />
+                    <div>
+                      <strong>{d.name}</strong>
+                      <p>{d.reason} • Duration: {d.duration}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Transit & Accommodation Grid */}
+            <div className="pass-two-col">
+              {/* Transport */}
+              <div className="pass-section">
+                <h3 className="pass-section-title">🚆 Transportation Schedule</h3>
+                {selectedTransport.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    {selectedTransport.map(t => (
+                      <div key={t.id} className="pass-list-item">
+                        <span>{t.mode === 'train' ? '🚆' : t.mode === 'bus' ? '🚌' : '🚗'} {t.operator}</span>
+                        <strong>₹{t.groupFare.toLocaleString()}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gray-500)' }}>
+                    Self-arranged or standard road transit estimate.
+                  </p>
+                )}
+              </div>
+
+              {/* Hotels */}
+              <div className="pass-section">
+                <h3 className="pass-section-title">🏨 Accommodation Stays</h3>
+                {trip.selectedHotels.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    {trip.selectedHotels.map(h => (
+                      <div key={h.hotelId} className="pass-list-item">
+                        <span>🏨 {h.hotelName} ({h.rooms} Rm, {h.nights} N)</span>
+                        <strong>₹{h.totalCost.toLocaleString()}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gray-500)' }}>
+                    Standard tourist accommodations recommended.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Official Notice & Disclaimer Box */}
+            <div className="pass-disclaimer-box">
+              <strong>⚠️ Important Notice (Demo Itinerary Pass)</strong>
+              <p>
+                This SiriPayana Travel Pass is an itinerary planning pass generated for demonstration purposes. It does <strong>not</strong> serve as an official train, bus, flight, or ASI monument entry ticket. Official tickets must be booked through the respective operators using the direct provider links in your trip summary.
               </p>
+<<<<<<< HEAD
             )}
             {saved && (
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gray-400)', marginTop: 'var(--space-2)' }}>
@@ -216,42 +346,43 @@ export default function ConfirmationPage() {
           <div className="confirmation__actions">
             <button className="btn btn--primary btn--lg" onClick={handleNewTrip}>
               🗺️ {t('confirmation.newTrip')}
+=======
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pass-actions-row">
+            <button
+              type="button"
+              className="btn btn--primary btn--lg pass-download-btn"
+              onClick={handleDownloadPDF}
+              disabled={pdfDownloading}
+            >
+              📥 {pdfDownloading ? 'Generating PDF...' : 'Download PDF Travel Pass'}
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
             </button>
-            <button className="btn btn--outline btn--lg" onClick={() => navigate('/dashboard')}>
-              📋 {t('confirmation.viewDashboard')}
+
+            <button
+              type="button"
+              className="btn btn--outline btn--lg"
+              onClick={() => {
+                goToStep(4);
+                navigate('/plan/budget');
+              }}
+            >
+              📊 Return to Budget Breakdown
             </button>
-            <button className="btn btn--outline" onClick={() => navigate('/')}>
-              🏠 {t('confirmation.goHome')}
+
+            <button
+              type="button"
+              className="btn btn--outline"
+              onClick={handleNewTrip}
+            >
+              🗺️ Plan Another Journey
             </button>
           </div>
         </motion.div>
       </div>
-
-      <style>{`
-        .plan-page__header--success { background: linear-gradient(135deg, var(--color-forest) 0%, var(--color-forest-light) 100%); }
-        .confirmation { max-width: 720px; margin: 0 auto; }
-        .confirmation__hero { text-align: center; padding: var(--space-10) 0 var(--space-8); }
-        .confirmation__check { font-size: 4rem; margin-bottom: var(--space-4); }
-        .confirmation__title { font-family: var(--font-display); font-size: var(--text-3xl); color: var(--color-forest-dark); margin-bottom: var(--space-2); }
-        .confirmation__subtitle { font-size: var(--text-lg); color: var(--color-gray-600); }
-        .confirmation__saved-time { font-size: var(--text-xs); color: var(--color-gray-400); margin-top: var(--space-2); }
-        .confirmation__summary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-8); }
-        .confirmation__summary-card { display: flex; gap: var(--space-3); align-items: flex-start; background: var(--color-white); border: 1px solid var(--color-gray-100); border-radius: var(--radius-lg); padding: var(--space-4); }
-        .confirmation__summary-icon { font-size: 1.5rem; }
-        .confirmation__summary-card strong { display: block; font-family: var(--font-display); color: var(--color-forest-dark); font-size: var(--text-base); }
-        .confirmation__summary-card p { font-size: var(--text-xs); color: var(--color-gray-500); margin-top: 2px; }
-        .confirmation__next { background: var(--color-ivory); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); }
-        .confirmation__next h3 { font-family: var(--font-display); font-size: var(--text-xl); color: var(--color-forest-dark); margin-bottom: var(--space-4); }
-        .confirmation__steps { display: flex; flex-direction: column; gap: var(--space-3); }
-        .confirmation__step { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-sm); color: var(--color-gray-700); padding: var(--space-2) 0; }
-        .confirmation__step-icon { font-size: 1.2rem; min-width: 28px; }
-        .confirmation__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; padding-bottom: var(--space-10); }
-        @media (max-width: 640px) {
-          .confirmation__summary { grid-template-columns: 1fr; }
-          .confirmation__actions { flex-direction: column; }
-          .confirmation__actions .btn { width: 100%; }
-        }
-      `}</style>
     </div>
   );
 }

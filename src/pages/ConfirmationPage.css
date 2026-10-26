@@ -1,0 +1,253 @@
+/* ============================================================
+   Confirmation Page — Step 8 Thank You & PDF Pass Styles
+   ============================================================ */
+
+.pass-container {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.plan-page__header--success {
+  background: linear-gradient(135deg, var(--color-forest-dark) 0%, var(--color-forest) 100%);
+}
+
+.travel-pass-card {
+  background: var(--color-white);
+  border: 2px solid var(--color-forest);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+  margin-bottom: var(--space-8);
+}
+
+.travel-pass-card__header {
+  background: linear-gradient(135deg, var(--color-forest-dark) 0%, var(--color-forest) 100%);
+  color: var(--color-white);
+  padding: var(--space-6) var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  border-bottom: 3px solid var(--color-gold);
+}
+
+.pass-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pass-logo {
+  font-size: 2rem;
+}
+
+.pass-brand h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  color: var(--color-white);
+  margin-bottom: 2px;
+}
+
+.pass-brand span {
+  font-size: var(--text-xs);
+  color: var(--color-gold-light);
+}
+
+.pass-ref-badge {
+  text-align: right;
+}
+
+.demo-tag {
+  display: inline-block;
+  background: var(--color-gold);
+  color: var(--color-forest-dark);
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-bottom: 4px;
+}
+
+.pass-ref-badge strong {
+  display: block;
+  font-family: monospace;
+  font-size: var(--text-base);
+  color: var(--color-white);
+}
+
+/* === Meta Grid === */
+.pass-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-8);
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.pass-meta-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.pass-meta-label {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 2px;
+}
+
+.pass-meta-val {
+  font-size: var(--text-base);
+  color: var(--color-forest-dark);
+}
+
+.pass-meta-sub {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+/* === Section inside pass === */
+.pass-section {
+  padding: var(--space-6) var(--space-8);
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.pass-section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  color: var(--color-forest-dark);
+  margin-bottom: var(--space-4);
+}
+
+.pass-dests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.pass-dest-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  position: relative;
+}
+
+.pass-dest-num {
+  width: 22px;
+  height: 22px;
+  background: var(--color-forest);
+  color: var(--color-white);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: var(--font-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pass-dest-img {
+  width: 52px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.pass-dest-item strong {
+  font-size: var(--text-xs);
+  color: var(--color-forest-dark);
+  display: block;
+}
+
+.pass-dest-item p {
+  font-size: 11px;
+  color: var(--color-gray-500);
+}
+
+.pass-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.pass-two-col .pass-section {
+  border-bottom: none;
+}
+
+.pass-two-col .pass-section:first-child {
+  border-right: 1px solid var(--color-gray-100);
+}
+
+.pass-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-xs);
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--color-gray-100);
+}
+
+.pass-disclaimer-box {
+  margin: var(--space-6) var(--space-8);
+  background: rgba(196, 152, 42, 0.12);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  font-size: var(--text-xs);
+  color: #78350f;
+  line-height: var(--leading-relaxed);
+}
+
+.pass-disclaimer-box strong {
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+/* === Action Buttons === */
+.pass-actions-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-10);
+}
+
+.pass-download-btn {
+  background: var(--color-forest);
+  color: var(--color-white);
+  box-shadow: 0 6px 20px rgba(45, 90, 61, 0.25);
+  font-weight: var(--font-bold);
+}
+
+.pass-download-btn:hover {
+  background: var(--color-forest-dark);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .pass-meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pass-two-col {
+    grid-template-columns: 1fr;
+  }
+  .pass-two-col .pass-section:first-child {
+    border-right: none;
+    border-bottom: 1px solid var(--color-gray-100);
+  }
+  .pass-actions-row {
+    flex-direction: column;
+  }
+  .pass-actions-row .btn {
+    width: 100%;
+  }
+}

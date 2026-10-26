@@ -7,7 +7,11 @@ import './AuthPage.css';
 
 export default function AuthPage() {
   const { t } = useTranslation();
+<<<<<<< HEAD
   const { signIn, signUp, showToast } = useApp();
+=======
+  const { login, register, dispatch, showToast } = useApp();
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
   const navigate = useNavigate();
   const location = useLocation();
   const isLogin = location.pathname === '/signin' || location.pathname === '/login';
@@ -22,12 +26,12 @@ export default function AuthPage() {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!isLogin && !name.trim()) errs.name = t('auth.nameRequired');
-    if (!email.trim()) errs.email = t('auth.emailRequired');
-    else if (!/\S+@\S+\.\S+/.test(email)) errs.email = t('auth.invalidEmail');
-    if (!password) errs.password = t('auth.passwordRequired');
-    else if (password.length < 8) errs.password = t('auth.passwordMin');
-    if (!isLogin && password !== confirmPw) errs.confirmPw = t('auth.passwordMatch');
+    if (!isLogin && !name.trim()) errs.name = t('auth.nameRequired') || 'Full name is required';
+    if (!email.trim()) errs.email = t('auth.emailRequired') || 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(email)) errs.email = t('auth.invalidEmail') || 'Please enter a valid email';
+    if (!password) errs.password = t('auth.passwordRequired') || 'Password is required';
+    else if (password.length < 6) errs.password = t('auth.passwordMin') || 'Password must be at least 6 characters';
+    if (!isLogin && password !== confirmPw) errs.confirmPw = t('auth.passwordMatch') || 'Passwords do not match';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -65,6 +69,24 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
+<<<<<<< HEAD
+=======
+    setTimeout(() => navigate('/onboarding'), 400);
+  };
+
+  const handleDemoGuestLogin = () => {
+    dispatch({
+      type: 'LOGIN',
+      payload: {
+        id: 'demo-user-1',
+        name: 'Karnataka Explorer',
+        email: 'explorer@siripayana.karnataka.gov.in',
+        createdAt: new Date().toISOString(),
+      },
+    });
+    showToast('Signed in with Demo Guest session', 'success');
+    navigate('/onboarding');
+>>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
   };
 
   return (
@@ -74,6 +96,28 @@ export default function AuthPage() {
           <span className="auth-card__logo">🧭</span>
           <h1>{isLogin ? t('auth.welcomeBack') : t('auth.joinUs')}</h1>
           <p>{isLogin ? t('auth.signIn') : t('auth.createAccount')}</p>
+        </div>
+
+        {/* Demo Fast Login Banner */}
+        <div style={{
+          background: 'rgba(196, 152, 42, 0.12)',
+          border: '1px solid var(--color-gold)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-3)',
+          marginBottom: 'var(--space-4)',
+          textAlign: 'center'
+        }}>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-forest-dark)', fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-2)' }}>
+            ⚡ Presenter / Evaluation Demo Mode
+          </p>
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            style={{ width: '100%', borderColor: 'var(--color-forest)', color: 'var(--color-forest-dark)' }}
+            onClick={handleDemoGuestLogin}
+          >
+            🚀 Continue Demo as Guest →
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-card__form">

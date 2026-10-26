@@ -273,7 +273,7 @@
   },
   "packages": {
     "title": "Choose Your Package",
-    "subtitle": "Select a planning package that suits your needs."
+    "subtitle": "Select a planning package that suits your travel requirements."
   },
   "summary": {
     "title": "Trip Summary",
@@ -296,9 +296,9 @@
     "thankYou": "Thank you for planning with SiriPayana!",
     "tripSaved": "Your trip has been saved successfully.",
     "whatNext": "What's Next?",
-    "step1": "Check your email for the trip summary",
-    "step2": "Book transport through the provided links",
-    "step3": "Save this page for your travel reference",
+    "step1": "Download your official PDF Travel Pass",
+    "step2": "Book transport through the provided verified links",
+    "step3": "Save this itinerary for your offline travels",
     "step4": "Share your trip plan with travel companions",
     "newTrip": "Plan Another Trip",
     "viewDashboard": "View My Dashboard",
@@ -335,5 +335,34 @@
     "de": "Deutsch",
     "ja": "日本語",
     "ru": "Русский"
+  },
+  "transport": {
+    "title": "Transport Options",
+    "subtitle": "Compare travel options across Karnataka routes with estimated fares and verified booking links.",
+    "from": "From",
+    "to": "To",
+    "date": "Travel Date",
+    "travellers": "Travellers",
+    "compare": "Compare Options",
+    "estimatedFare": "Estimated Fare",
+    "duration": "Duration",
+    "perPerson": "per person",
+    "totalCost": "Total Cost",
+    "bookNow": "Book via Operator",
+    "note": "Fares are realistic estimates. Please verify before finalizing booking.",
+    "train": "Train",
+    "bus": "Bus",
+    "flight": "Flight",
+    "car": "Car / Taxi"
+  },
+  "hotels": {
+    "title": "Hotel & Stay Booking",
+    "subtitle": "Handpicked stays near your destinations including government KSTDC hotels and heritage homestays.",
+    "selectStay": "Select This Stay",
+    "removeStay": "Remove Stay",
+    "nights": "Nights",
+    "rooms": "Rooms",
+    "perNight": "per night",
+    "totalStay": "Total Stay Cost"
   }
 }

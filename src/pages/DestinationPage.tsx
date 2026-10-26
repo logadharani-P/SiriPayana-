@@ -2,13 +2,16 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { getDestinationBySlug, getCategoryIcon, getRegionLabel, destinations } from '../data/destinations';
+import { DESTINATION_IMAGES } from '../data/destinationImages';
 import { useApp } from '../context/AppContext';
+import { useTrip, SelectedDestination } from '../context/TripContext';
 import './DestinationPage.css';
 
 export default function DestinationPage() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
-  const { state, dispatch, showToast } = useApp();
+  const { state, dispatch: appDispatch, showToast } = useApp();
+  const { trip, dispatch: tripDispatch } = useTrip();
   const navigate = useNavigate();
   const dest = getDestinationBySlug(slug || '');
 
@@ -27,20 +30,28 @@ export default function DestinationPage() {
   }
 
   const isFavorite = state.favorites.includes(dest.id);
-  const isSaved = state.savedDestinations.some(s => s.destinationId === dest.id);
+  const isInTrip = trip.selectedDestinations.some(d => d.destinationId === dest.id);
 
   const toggleFavorite = () => {
-    dispatch({ type: 'TOGGLE_FAVORITE', payload: dest.id });
+    appDispatch({ type: 'TOGGLE_FAVORITE', payload: dest.id });
     showToast(isFavorite ? 'Removed from favourites' : 'Added to favourites!', 'success');
   };
 
-  const saveDest = () => {
-    if (isSaved) {
-      dispatch({ type: 'REMOVE_SAVED_DESTINATION', payload: dest.id });
-      showToast('Removed from saved destinations', 'info');
+  const toggleTripSelection = () => {
+    if (isInTrip) {
+      tripDispatch({ type: 'REMOVE_DESTINATION', payload: dest.id });
+      showToast(`Removed ${dest.name} from your trip`, 'info');
     } else {
-      dispatch({ type: 'SAVE_DESTINATION', payload: { destinationId: dest.id, savedAt: new Date().toISOString() } });
-      showToast('Saved to My Trips!', 'success');
+      const sel: SelectedDestination = {
+        destinationId: dest.id,
+        slug: dest.slug,
+        name: dest.name,
+        imageUrl: DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl,
+        duration: dest.recommendedDuration,
+        reason: `${dest.category.toUpperCase()} • ${dest.district}`,
+      };
+      tripDispatch({ type: 'ADD_DESTINATION', payload: sel });
+      showToast(`Added ${dest.name} to your trip plan!`, 'success');
     }
   };
 
@@ -55,18 +66,27 @@ export default function DestinationPage() {
     return `₹${amount}`;
   };
 
+  const authenticImage = DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl;
+
   return (
     <div className="dest-page">
       {/* Hero */}
       <div className="dest-page__hero">
-        <img src={dest.imageUrl} alt={dest.name} loading="eager" onError={e => { (e.target as HTMLImageElement).src = `https://placehold.co/1200x600/2D5A3D/FAF7F2?text=${encodeURIComponent(dest.name)}`; }} />
+        <img
+          src={authenticImage}
+          alt={dest.name}
+          loading="eager"
+          onError={e => {
+            (e.target as HTMLImageElement).src = `https://images.unsplash.com/photo-1600100561600-44d5e3cba921?w=1200&q=80`;
+          }}
+        />
         <div className="dest-page__hero-overlay">
           <div className="container">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <span className="dest-page__badge">{getCategoryIcon(dest.category)} {dest.category}</span>
               <h1 className="dest-page__title">{dest.name}</h1>
               <p className="dest-page__meta">
-                📍 {dest.district} • {getRegionLabel(dest.region)} • {dest.recommendedDuration}
+                📍 {dest.district} • {getRegionLabel(dest.region)} • ⏱️ {dest.recommendedDuration}
               </p>
             </motion.div>
           </div>
@@ -75,17 +95,50 @@ export default function DestinationPage() {
 
       <div className="container dest-page__content">
         {/* Actions bar */}
-        <div className="dest-page__actions">
-          <button className={`btn ${isFavorite ? 'btn--primary' : 'btn--outline'} btn--sm`} onClick={toggleFavorite}>
-            {isFavorite ? '❤️' : '🤍'} {t('destination.saveFavorite')}
+        <div className="dest-page__actions" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+          <button
+            className="btn btn--outline btn--sm"
+            onClick={() => navigate('/dashboard')}
+          >
+            ← Back to 4-Direction Dashboard
           </button>
-          <button className={`btn ${isSaved ? 'btn--primary' : 'btn--outline'} btn--sm`} onClick={saveDest}>
-            {isSaved ? '✓' : '+'} {t('destination.addToTrip')}
+
+          <button
+            className={`btn ${isInTrip ? 'btn--primary' : 'btn--outline'} btn--sm`}
+            onClick={toggleTripSelection}
+          >
+            {isInTrip ? '✓ Selected in Trip' : '+ Add to Trip Plan'}
           </button>
-          <Link to={`/chat?dest=${dest.slug}`} className="btn btn--outline btn--sm">🤖 {t('destination.askAI')}</Link>
-          <a href={`https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}`} target="_blank" rel="noopener noreferrer" className="btn btn--outline btn--sm">
+
+          <button
+            className={`btn ${isFavorite ? 'btn--primary' : 'btn--outline'} btn--sm`}
+            onClick={toggleFavorite}
+          >
+            {isFavorite ? '❤️ In Favourites' : '🤍 Save Favourite'}
+          </button>
+
+          <Link to={`/chat?dest=${dest.slug}`} className="btn btn--outline btn--sm">
+            🤖 {t('destination.askAI')}
+          </Link>
+
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn--outline btn--sm"
+          >
             📍 {t('destination.getDirections')}
           </a>
+
+          {trip.selectedDestinations.length > 0 && (
+            <Link
+              to="/plan/transport"
+              className="btn btn--primary btn--sm"
+              style={{ marginLeft: 'auto', background: 'var(--color-gold)', color: 'var(--color-forest-dark)', fontWeight: 'bold' }}
+            >
+              Continue with {trip.selectedDestinations.length} Places →
+            </Link>
+          )}
         </div>
 
         <div className="dest-page__grid">
