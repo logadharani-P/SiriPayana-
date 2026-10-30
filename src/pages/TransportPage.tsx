@@ -148,11 +148,11 @@ export default function TransportPage() {
       <div className="plan-page__header">
         <div className="container">
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gold-light)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)', fontWeight: 'var(--font-bold)' }}>
-            Step 4 • Travel & Transit
+            {t('transportSection.stepBadge', 'STEP 3 • TRAVEL & TRANSIT')}
           </span>
-          <h1>🚆 Transportation & Ticket Options</h1>
+          <h1>🚆 {t('transportSection.title', 'Transportation & Ticket Options')}</h1>
           <p>
-            Compare verified transport routes across Karnataka. Fares are calculated dynamically for {totalTravelers} traveller{totalTravelers > 1 ? 's' : ''}.
+            {t('transportSection.subtitle', { count: totalTravelers, defaultValue: `Compare verified transport routes across Karnataka. Fares are calculated dynamically for ${totalTravelers} traveller(s).` })}
           </p>
         </div>
       </div>
@@ -175,10 +175,10 @@ export default function TransportPage() {
             <span style={{ fontSize: '1.5rem' }}>ℹ️</span>
             <div>
               <strong style={{ color: 'var(--color-forest-dark)', fontSize: 'var(--text-sm)', display: 'block' }}>
-                Transparent Pricing & Booking Notice
+                {t('transportSection.transparencyTitle', 'Transparent Pricing & Booking Notice')}
               </strong>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gray-600)', margin: 0 }}>
-                Prices are realistic estimated fares based on standard schedules. SiriPayana provides direct links to verified operators (IRCTC, KSRTC, Savaari) so you can review real-time seat availability or book directly without middleman markups.
+                {t('transportSection.transparencyDesc', 'Prices are realistic estimated fares based on standard schedules. SiriPayana provides direct links to verified operators (IRCTC, KSRTC, Savaari) so you can review real-time seat availability or book directly without middleman markups.')}
               </p>
             </div>
           </div>
@@ -333,10 +333,10 @@ export default function TransportPage() {
           {/* Navigation Actions */}
           <div className="plan-page__actions">
             <button className="btn btn--outline" onClick={handleBack}>
-              ← Back to Destinations
+              {t('transportSection.back', '← Back to Destinations')}
             </button>
             <button className="btn btn--primary btn--lg" onClick={handleContinue}>
-              Proceed to Hotel Booking (Step 5) →
+              {t('transportSection.proceedHotels', 'Proceed to Hotel Booking (Step 4) →')}
             </button>
           </div>
         </motion.div>

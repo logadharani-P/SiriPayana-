@@ -48,11 +48,23 @@ export default function Navbar() {
 
   const currentLang = supportedLanguages.find(l => l.code === i18n.language) || supportedLanguages[0];
 
+  const isLinkActive = (to: string) => {
+    if (to.includes('#')) return false;
+    if (to === '/') return location.pathname === '/';
+    if (to === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname.startsWith('/destinations');
+    }
+    if (to === '/onboarding') {
+      return location.pathname === '/onboarding' || location.pathname.startsWith('/plan');
+    }
+    return location.pathname === to;
+  };
+
   const navLinks = [
     { to: '/', label: t('nav.home') },
-    { to: '/dashboard', label: '🧭 Four Directions' },
     { to: '/explore', label: t('nav.explore') },
     { to: '/onboarding', label: '📋 Plan Trip' },
+    { to: '/dashboard', label: '🧭 Destinations' },
     { to: '/#how-it-works', label: t('nav.howItWorks'), isAnchor: true },
     { to: '/#about', label: t('nav.about'), isAnchor: true },
   ];
@@ -93,16 +105,15 @@ export default function Navbar() {
                   {link.label}
                 </button>
               ) : (
-                <Link key={link.to} to={link.to} className={`navbar__link ${location.pathname === link.to ? 'navbar__link--active' : ''}`}>
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`navbar__link ${isLinkActive(link.to) ? 'navbar__link--active' : ''}`}
+                >
                   {link.label}
                 </Link>
               )
             ))}
-            {state.isAuthenticated && (
-              <Link to="/dashboard" className={`navbar__link ${location.pathname === '/dashboard' ? 'navbar__link--active' : ''}`}>
-                {t('nav.myTrips')}
-              </Link>
-            )}
           </div>
 
           {/* Right side controls */}
@@ -231,16 +242,16 @@ export default function Navbar() {
                       {link.label}
                     </button>
                   ) : (
-                    <Link key={link.to} to={link.to} className="navbar__mobile-link" onClick={() => setMobileOpen(false)}>
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      className={`navbar__mobile-link ${isLinkActive(link.to) ? 'navbar__mobile-link--active' : ''}`}
+                      onClick={() => setMobileOpen(false)}
+                    >
                       {link.label}
                     </Link>
                   )
                 ))}
-                {state.isAuthenticated && (
-                  <Link to="/dashboard" className="navbar__mobile-link" onClick={() => setMobileOpen(false)}>
-                    {t('nav.myTrips')}
-                  </Link>
-                )}
               </div>
               <div className="navbar__mobile-lang">
                 <span className="navbar__mobile-lang-label">{t('footer.language')}</span>

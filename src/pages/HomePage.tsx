@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, useInView } from 'framer-motion';
 import { destinations, getCategoryIcon } from '../data/destinations';
 import type { DestinationCategory } from '../data/destinations';
+import { DESTINATION_IMAGES, KARNATAKA_FALLBACK_IMAGE } from '../data/destinationImages';
 import './HomePage.css';
 
 // Animation wrapper
@@ -222,22 +223,34 @@ export default function HomePage() {
             </div>
           </FadeInSection>
           <div className="discover__grid">
-            {filteredDestinations.map((dest, i) => (
-              <FadeInSection key={dest.id} delay={i * 0.08}>
-                <Link to={`/destinations/${dest.slug}`} className="dest-card">
-                  <div className="dest-card__image">
-                    <img src={dest.imageUrl} alt={dest.name} loading="lazy" onError={e => { (e.target as HTMLImageElement).src = `https://placehold.co/600x400/2D5A3D/FAF7F2?text=${encodeURIComponent(dest.name)}`; }} />
-                    <span className="dest-card__badge">{getCategoryIcon(dest.category)} {dest.category}</span>
-                  </div>
-                  <div className="dest-card__body">
-                    <h3 className="dest-card__title">{dest.name}</h3>
-                    <p className="dest-card__meta">📍 {dest.district} • {dest.recommendedDuration}</p>
-                    <p className="dest-card__desc">{dest.shortDescription}</p>
-                    <span className="dest-card__action">{t('discover.explorePlace')} →</span>
-                  </div>
-                </Link>
-              </FadeInSection>
-            ))}
+            {filteredDestinations.map((dest, i) => {
+              const img = DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl || KARNATAKA_FALLBACK_IMAGE;
+              return (
+                <FadeInSection key={dest.id} delay={i * 0.08}>
+                  <Link to={`/destinations/${dest.slug}`} className="dest-card">
+                    <div className="dest-card__image">
+                      <img
+                        src={img}
+                        alt={dest.name}
+                        loading="lazy"
+                        onError={e => {
+                          const target = e.currentTarget;
+                          target.onerror = null;
+                          target.src = KARNATAKA_FALLBACK_IMAGE;
+                        }}
+                      />
+                      <span className="dest-card__badge">{getCategoryIcon(dest.category)} {dest.category}</span>
+                    </div>
+                    <div className="dest-card__body">
+                      <h3 className="dest-card__title">{dest.name}</h3>
+                      <p className="dest-card__meta">📍 {dest.district} • {dest.recommendedDuration}</p>
+                      <p className="dest-card__desc">{dest.shortDescription}</p>
+                      <span className="dest-card__action">{t('discover.explorePlace')} →</span>
+                    </div>
+                  </Link>
+                </FadeInSection>
+              );
+            })}
           </div>
           <FadeInSection className="text-center" delay={0.2}>
             <Link to="/explore" className="btn btn--outline" style={{ marginTop: 'var(--space-8)' }}>

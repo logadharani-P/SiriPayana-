@@ -51,11 +51,11 @@ export default function PaymentPage() {
       <div className="plan-page__header">
         <div className="container">
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gold-light)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)', fontWeight: 'var(--font-bold)' }}>
-            Step 7 • Booking & Final Verification
+            {t('paymentSection.stepBadge', 'STEP 6 • BOOKING & FINAL VERIFICATION')}
           </span>
-          <h1>💳 Payment & Reservation Review</h1>
+          <h1>💳 {t('paymentSection.title', 'Payment & Reservation Review')}</h1>
           <p>
-            Review all trip components before confirming. Use Demo Mode for testing and presentations without real payments.
+            {t('paymentSection.subtitle', 'Review all trip components before confirming. Use Demo Mode for testing and presentations without real payments.')}
           </p>
         </div>
       </div>
@@ -71,14 +71,14 @@ export default function PaymentPage() {
               className={`payment-mode-tab ${mode === 'demo' ? 'payment-mode-tab--active' : ''}`}
               onClick={() => setMode('demo')}
             >
-              ⚡ Demo Mode (No Card Required)
+              {t('paymentSection.demoMode', '⚡ Demo Mode (No Card Required)')}
             </button>
             <button
               type="button"
               className={`payment-mode-tab ${mode === 'production' ? 'payment-mode-tab--active' : ''}`}
               onClick={() => setMode('production')}
             >
-              🔒 Production Mode (Gateway Integration)
+              {t('paymentSection.prodMode', '🔒 Production Mode (Gateway Integration)')}
             </button>
           </div>
 
@@ -173,7 +173,7 @@ export default function PaymentPage() {
                           style={{ width: '100%', marginTop: 'var(--space-4)', background: 'var(--color-forest)' }}
                           onClick={handleSimulateDemoPayment}
                         >
-                          ✓ Confirm Demo Booking & Issue Travel Pass
+                          {t('paymentSection.confirmDemoBtn', '✓ Confirm Demo Booking & Issue Travel Pass')}
                         </button>
                       )}
                     </div>
@@ -206,7 +206,7 @@ export default function PaymentPage() {
           {/* Navigation Actions */}
           <div className="plan-page__actions" style={{ marginTop: 'var(--space-8)' }}>
             <button className="btn btn--outline" onClick={handleBackToBudget}>
-              ← Back to Budget Breakdown
+              {t('paymentSection.backBudget', '← Back to Budget Breakdown')}
             </button>
           </div>
         </motion.div>

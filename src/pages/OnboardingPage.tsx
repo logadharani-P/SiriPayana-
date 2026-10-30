@@ -57,20 +57,20 @@ export default function OnboardingPage() {
     // Validation for current question
     if (currentQuestion === 1) {
       if (!p.startingCity.trim()) {
-        setErrorMsg('Please select or enter your departure city.');
+        setErrorMsg(t('onboardingSection.errors.city', 'Please select or enter your departure city.'));
         return;
       }
     } else if (currentQuestion === 2) {
       if (!p.startDate) {
-        setErrorMsg('Please pick a start date for your journey.');
+        setErrorMsg(t('onboardingSection.errors.startDate', 'Please pick a start date for your journey.'));
         return;
       }
       if (!p.endDate) {
-        setErrorMsg('Please pick an end date for your journey.');
+        setErrorMsg(t('onboardingSection.errors.endDate', 'Please pick an end date for your journey.'));
         return;
       }
       if (new Date(p.endDate) < new Date(p.startDate)) {
-        setErrorMsg('End date cannot be earlier than start date.');
+        setErrorMsg(t('onboardingSection.errors.dateOrder', 'End date cannot be earlier than start date.'));
         return;
       }
       // Re-calculate duration
@@ -79,17 +79,17 @@ export default function OnboardingPage() {
       updatePrefs({ duration: calcDays });
     } else if (currentQuestion === 3) {
       if (p.interests.length === 0) {
-        setErrorMsg('Please select at least one travel experience.');
+        setErrorMsg(t('onboardingSection.errors.interests', 'Please select at least one travel experience.'));
         return;
       }
     } else if (currentQuestion === 4) {
       if (!p.totalBudget || p.totalBudget < 2000) {
-        setErrorMsg('Please enter an estimated budget of at least ₹2,000.');
+        setErrorMsg(t('onboardingSection.errors.budget', 'Please enter an estimated budget of at least ₹2,000.'));
         return;
       }
     } else if (currentQuestion === 5) {
       if (p.adults < 1) {
-        setErrorMsg('At least 1 adult traveller is required.');
+        setErrorMsg(t('onboardingSection.errors.adults', 'At least 1 adult traveller is required.'));
         return;
       }
     }
@@ -133,15 +133,15 @@ export default function OnboardingPage() {
         <div className="onboarding-progress-wrapper">
           <div className="onboarding-progress-header">
             <span className="onboarding-step-count">
-              {t('common.step', 'Step')} {currentQuestion} / 6
+              {t('onboardingSection.stepCount', { step: currentQuestion, defaultValue: `Step ${currentQuestion} of 6` })}
             </span>
             <span className="onboarding-step-badge">
-              {currentQuestion === 1 && '📍 Departure City'}
-              {currentQuestion === 2 && '📅 Travel Dates'}
-              {currentQuestion === 3 && '🎯 Travel Purpose'}
-              {currentQuestion === 4 && '💰 Trip Budget'}
-              {currentQuestion === 5 && '👥 Travellers'}
-              {currentQuestion === 6 && '🌐 Preferred Language'}
+              {currentQuestion === 1 && t('onboardingSection.badge1', '📍 Departure City')}
+              {currentQuestion === 2 && t('onboardingSection.badge2', '📅 Travel Dates')}
+              {currentQuestion === 3 && t('onboardingSection.badge3', '🎯 Travel Purpose')}
+              {currentQuestion === 4 && t('onboardingSection.badge4', '💰 Trip Budget')}
+              {currentQuestion === 5 && t('onboardingSection.badge5', '👥 Travellers')}
+              {currentQuestion === 6 && t('onboardingSection.badge6', '🌐 Preferred Language')}
             </span>
           </div>
           <div className="onboarding-progress-track">
@@ -182,17 +182,17 @@ export default function OnboardingPage() {
                 {/* QUESTION 1: Starting Location */}
                 {currentQuestion === 1 && (
                   <div>
-                    <h2 className="onboarding-title">Where will your journey begin?</h2>
+                    <h2 className="onboarding-title">{t('onboardingSection.q1Title', 'Where will your journey begin?')}</h2>
                     <p className="onboarding-subtitle">
-                      Choose your departure city or enter any town in or around Karnataka to help us optimize your transport route.
+                      {t('onboardingSection.q1Subtitle', 'Choose your departure city or enter any town in or around Karnataka to help us optimize your transport route.')}
                     </p>
 
                     <div className="form-group" style={{ marginTop: 'var(--space-6)' }}>
-                      <label className="form-label">Departure City</label>
+                      <label className="form-label">{t('onboardingSection.departureLabel', 'Departure City')}</label>
                       <input
                         type="text"
                         className="form-input form-input--lg"
-                        placeholder="e.g. Bengaluru, Mysuru, Hubballi..."
+                        placeholder={t('onboardingSection.departurePlaceholder', 'e.g. Bengaluru, Mysuru, Hubballi...')}
                         value={p.startingCity}
                         onChange={e => updatePrefs({ startingCity: e.target.value })}
                         autoFocus
@@ -200,7 +200,7 @@ export default function OnboardingPage() {
                     </div>
 
                     <div style={{ marginTop: 'var(--space-4)' }}>
-                      <span className="onboarding-hint">Or choose a major departure hub:</span>
+                      <span className="onboarding-hint">{t('onboardingSection.departureHint', 'Or choose a major departure hub:')}</span>
                       <div className="chips" style={{ marginTop: 'var(--space-2)' }}>
                         {KARNATAKA_CITIES.map(city => (
                           <button
@@ -220,14 +220,14 @@ export default function OnboardingPage() {
                 {/* QUESTION 2: Travel Dates & Trip Duration */}
                 {currentQuestion === 2 && (
                   <div>
-                    <h2 className="onboarding-title">When are you planning to travel?</h2>
+                    <h2 className="onboarding-title">{t('onboardingSection.q2Title', 'When are you planning to travel?')}</h2>
                     <p className="onboarding-subtitle">
-                      Select your travel dates. We will automatically calculate the optimal nights, itinerary pacing, and seasonal recommendations.
+                      {t('onboardingSection.q2Subtitle', 'Select your trip dates. SiriPayana will tailor best visiting hours, seasonal events, and day-wise travel pace.')}
                     </p>
 
                     <div className="form-row" style={{ marginTop: 'var(--space-6)' }}>
                       <div className="form-group">
-                        <label className="form-label">Start Date</label>
+                        <label className="form-label">{t('onboardingSection.startDate', 'Start Date')}</label>
                         <input
                           type="date"
                           className="form-input form-input--lg"
@@ -237,7 +237,7 @@ export default function OnboardingPage() {
                         />
                       </div>
                       <div className="form-group">
-                        <label className="form-label">End Date</label>
+                        <label className="form-label">{t('onboardingSection.endDate', 'End Date')}</label>
                         <input
                           type="date"
                           className="form-input form-input--lg"
@@ -282,9 +282,9 @@ export default function OnboardingPage() {
                 {/* QUESTION 3: Travel Purpose */}
                 {currentQuestion === 3 && (
                   <div>
-                    <h2 className="onboarding-title">What is your travel focus?</h2>
+                    <h2 className="onboarding-title">{t('onboardingSection.q3Title', 'What experiences inspire you?')}</h2>
                     <p className="onboarding-subtitle">
-                      Choose one or more travel styles that excite you. We will prioritize these categories across all regions.
+                      {t('onboardingSection.q3Subtitle', 'Select all travel themes that excite you. You can combine multiple interests across Karnataka.')}
                     </p>
 
                     <div className="onboarding-purpose-grid" style={{ marginTop: 'var(--space-6)' }}>
@@ -314,9 +314,9 @@ export default function OnboardingPage() {
                 {/* QUESTION 4: Budget */}
                 {currentQuestion === 4 && (
                   <div>
-                    <h2 className="onboarding-title">What is your estimated trip budget?</h2>
+                    <h2 className="onboarding-title">{t('onboardingSection.q4Title', 'What is your estimated total budget?')}</h2>
                     <p className="onboarding-subtitle">
-                      This helps us recommend suitable hotels, transportation options, and daily activities without surprise costs.
+                      {t('onboardingSection.q4Subtitle', 'This covers transport, stays, food, entry fees, and activities for your entire group.')}
                     </p>
 
                     <div className="onboarding-budget-presets" style={{ marginTop: 'var(--space-6)' }}>
@@ -340,7 +340,7 @@ export default function OnboardingPage() {
                     </div>
 
                     <div className="form-group" style={{ marginTop: 'var(--space-6)' }}>
-                      <label className="form-label">Or enter custom total budget (₹)</label>
+                      <label className="form-label">{t('onboardingSection.totalBudget', 'Total Trip Budget (INR)')}</label>
                       <input
                         type="number"
                         className="form-input form-input--lg"
@@ -357,15 +357,15 @@ export default function OnboardingPage() {
                 {/* QUESTION 5: Traveller Count */}
                 {currentQuestion === 5 && (
                   <div>
-                    <h2 className="onboarding-title">Who is joining you on this journey?</h2>
+                    <h2 className="onboarding-title">{t('onboardingSection.q5Title', 'Who is traveling with you?')}</h2>
                     <p className="onboarding-subtitle">
-                      Specify the number of adults and children so we can accurately compute entry tickets, room counts, and fares.
+                      {t('onboardingSection.q5Subtitle', 'Specify group size so transport fares, hotel rooms, and monument entries are calculated accurately.')}
                     </p>
 
                     <div className="onboarding-travellers-box" style={{ marginTop: 'var(--space-6)' }}>
                       <div className="onboarding-traveller-row">
                         <div>
-                          <strong>Adults</strong>
+                          <strong>{t('onboardingSection.adults', 'Adults (Age 12+)')}</strong>
                           <p>Age 12 and above</p>
                         </div>
                         <div className="onboarding-counter">
@@ -390,7 +390,7 @@ export default function OnboardingPage() {
 
                       <div className="onboarding-traveller-row">
                         <div>
-                          <strong>Children</strong>
+                          <strong>{t('onboardingSection.children', 'Children (Age 3-11)')}</strong>
                           <p>Age 11 and under (reduced or free entry)</p>
                         </div>
                         <div className="onboarding-counter">
@@ -418,7 +418,7 @@ export default function OnboardingPage() {
                       <span>Total Group Size:</span>
                       <strong>{p.adults + p.children} Travellers</strong>
                       <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gray-500)', marginLeft: 'var(--space-2)' }}>
-                        (Requires approximately {Math.ceil((p.adults + p.children) / 2)} hotel rooms)
+                        ({t('onboardingSection.roomsEstimate', { rooms: Math.ceil((p.adults + p.children) / 2), defaultValue: `Estimated Rooms: ${Math.ceil((p.adults + p.children) / 2)} (Twin Sharing Basis)` })})
                       </span>
                     </div>
                   </div>
@@ -427,9 +427,9 @@ export default function OnboardingPage() {
                 {/* QUESTION 6: Preferred Language */}
                 {currentQuestion === 6 && (
                   <div>
-                    <h2 className="onboarding-title">Which language do you prefer?</h2>
+                    <h2 className="onboarding-title">{t('onboardingSection.q6Title', 'Select your preferred language for this journey')}</h2>
                     <p className="onboarding-subtitle">
-                      SiriPayana provides end-to-end guidance in your chosen language, including destination history, directions, and the generated PDF travel pass.
+                      {t('onboardingSection.q6Subtitle', 'You can change this anytime from the top navigation bar.')}
                     </p>
 
                     <div className="onboarding-lang-grid" style={{ marginTop: 'var(--space-6)' }}>
@@ -469,7 +469,7 @@ export default function OnboardingPage() {
                 className="btn btn--outline"
                 onClick={handleBack}
               >
-                ← {currentQuestion === 1 ? 'Back to Sign-in' : t('common.back', 'Back')}
+                ← {currentQuestion === 1 ? 'Back to Sign-in' : t('onboardingSection.back', 'Back')}
               </button>
 
               <button
@@ -478,8 +478,8 @@ export default function OnboardingPage() {
                 onClick={handleNext}
               >
                 {currentQuestion === 6
-                  ? 'Explore Karnataka Dashboard (Step 2) →'
-                  : `${t('common.next', 'Next Question')} →`}
+                  ? t('onboardingSection.finish', 'Finish & Explore Destinations →')
+                  : t('onboardingSection.continue', 'Continue →')}
               </button>
             </div>
           </div>

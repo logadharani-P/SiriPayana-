@@ -1,29 +1,86 @@
-import { PLAN_STEPS, useTrip } from '../context/TripContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { PLAN_STEPS, useTrip } from '../context/TripContext';
 import './StepIndicator.css';
 
 export default function StepIndicator() {
-  const { trip, goToStep } = useTrip();
   const { t } = useTranslation();
+  const { trip, goToStep } = useTrip();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Route-based active step determination
+  const routeIndex = PLAN_STEPS.findIndex(step => {
+    if (step.path === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname.startsWith('/destinations');
+    }
+    return location.pathname === step.path;
+  });
+
+  const activeStep = routeIndex >= 0 ? routeIndex : Math.min(trip.currentStep, PLAN_STEPS.length - 1);
+
+  const handleStepClick = (index: number, path: string) => {
+    if (index <= activeStep) {
+      goToStep(index);
+      navigate(path);
+    }
+  };
+
+  const getStepLabel = (step: typeof PLAN_STEPS[0]) => {
+    return t(`planSteps.${step.key}`, step.label);
+  };
+
+  const currentLabel = getStepLabel(PLAN_STEPS[activeStep] || PLAN_STEPS[0]);
 
   return (
-    <div className="step-indicator">
-      <div className="step-indicator__track">
-        {PLAN_STEPS.map((step, i) => (
-          <div key={i} className={`step-indicator__item ${i === trip.currentStep ? 'step-indicator__item--active' : ''} ${i < trip.currentStep ? 'step-indicator__item--done' : ''}`}>
-            <button
-              className="step-indicator__dot"
-              onClick={() => i <= trip.currentStep && goToStep(i)}
-              disabled={i > trip.currentStep}
-              aria-label={`Step ${i + 1}: ${step.label}`}
+    <nav className="step-indicator" aria-label="Trip planning progress">
+      <ol className="step-indicator__track">
+        {PLAN_STEPS.map((step, i) => {
+          const isDone = i < activeStep;
+          const isActive = i === activeStep;
+          const label = getStepLabel(step);
+
+          return (
+            <li
+              key={step.path}
+              className={`step-indicator__item ${isActive ? 'step-indicator__item--active' : ''} ${isDone ? 'step-indicator__item--done' : ''}`}
             >
-              {i < trip.currentStep ? '✓' : i + 1}
-            </button>
-            <span className="step-indicator__label">{step.label}</span>
-            {i < PLAN_STEPS.length - 1 && <div className={`step-indicator__line ${i < trip.currentStep ? 'step-indicator__line--done' : ''}`} />}
-          </div>
-        ))}
+              {i < PLAN_STEPS.length - 1 && (
+                <div
+                  className={`step-indicator__line ${isDone ? 'step-indicator__line--done' : ''}`}
+                  aria-hidden="true"
+                />
+              )}
+
+              <button
+                type="button"
+                className="step-indicator__dot"
+                onClick={() => handleStepClick(i, step.path)}
+                disabled={i > activeStep}
+                aria-label={`Step ${i + 1}: ${label} (${isActive ? 'Current' : isDone ? 'Completed' : 'Upcoming'})`}
+                aria-current={isActive ? 'step' : undefined}
+              >
+                {isDone ? (
+                  <span className="step-indicator__check" aria-hidden="true">✓</span>
+                ) : (
+                  <span className="step-indicator__num">{i + 1}</span>
+                )}
+              </button>
+
+              <div className="step-indicator__label-wrap">
+                <span className="step-indicator__step-num">Step {i + 1}</span>
+                <span className="step-indicator__label">{label}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* Mobile active step banner for 375px/425px screens */}
+      <div className="step-indicator__mobile-summary" aria-live="polite">
+        <span className="step-indicator__mobile-pill">Step {activeStep + 1} of {PLAN_STEPS.length}</span>
+        <span className="step-indicator__mobile-title">{currentLabel}</span>
       </div>
-    </div>
+    </nav>
   );
 }

@@ -32,11 +32,11 @@ export default function BudgetPage() {
       <div className="plan-page__header">
         <div className="container">
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gold-light)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)', fontWeight: 'var(--font-bold)' }}>
-            Step 6 • Transparent Costing
+            {t('budgetSection.stepBadge', 'STEP 5 • EXPENSE & BUDGET ANALYSIS')}
           </span>
-          <h1>💰 Itemized Trip Budget Summary</h1>
+          <h1>💰 {t('budgetSection.title', 'Itemized Trip Budget')}</h1>
           <p>
-            Complete financial breakdown based on your destinations, transport, stays, and {travelers} traveller{travelers > 1 ? 's' : ''}.
+            {t('budgetSection.subtitle', 'Comprehensive financial breakdown for your entire group across all journey legs.')}
           </p>
         </div>
       </div>
@@ -49,41 +49,41 @@ export default function BudgetPage() {
           <div className="budget-kpi-grid">
             <div className="budget-kpi-card">
               <span className="budget-kpi-icon">🚆</span>
-              <span className="budget-kpi-label">Transport Total</span>
+              <span className="budget-kpi-label">{t('budgetSection.transportTotal', 'Transport Total')}</span>
               <strong className="budget-kpi-val">₹{totalTransport.toLocaleString()}</strong>
-              <span className="budget-status-pill budget-status-pill--est">Estimated Fare</span>
+              <span className="budget-status-pill budget-status-pill--est">{t('budgetSection.estFare', 'Estimated Fare')}</span>
             </div>
 
             <div className="budget-kpi-card">
               <span className="budget-kpi-icon">🏨</span>
-              <span className="budget-kpi-label">Accommodation Total</span>
+              <span className="budget-kpi-label">{t('budgetSection.accommodationTotal', 'Accommodation Total')}</span>
               <strong className="budget-kpi-val">₹{b.accommodation.toLocaleString()}</strong>
-              <span className="budget-status-pill budget-status-pill--est">Room Estimate</span>
+              <span className="budget-status-pill budget-status-pill--est">{t('budgetSection.roomEstimate', 'Room Estimate')}</span>
             </div>
 
             <div className="budget-kpi-card">
               <span className="budget-kpi-icon">🎟️</span>
-              <span className="budget-kpi-label">Entry Fees Total</span>
+              <span className="budget-kpi-label">{t('budgetSection.entryFeesTotal', 'Entry Fees Total')}</span>
               <strong className="budget-kpi-val">₹{b.entryFees.toLocaleString()}</strong>
-              <span className="budget-status-pill budget-status-pill--direct">Pay at Counter</span>
+              <span className="budget-status-pill budget-status-pill--direct">{t('budgetSection.payAtCounter', 'Pay at Counter')}</span>
             </div>
 
             <div className="budget-kpi-card">
               <span className="budget-kpi-icon">🍽️</span>
-              <span className="budget-kpi-label">Other Expenses</span>
+              <span className="budget-kpi-label">{t('budgetSection.otherExpenses', 'Other Expenses')}</span>
               <strong className="budget-kpi-val">₹{otherExpenses.toLocaleString()}</strong>
-              <span className="budget-status-pill budget-status-pill--est">Food, Taxes & Guide</span>
+              <span className="budget-status-pill budget-status-pill--est">{t('budgetSection.foodTaxesGuide', 'Food, Taxes & Guide')}</span>
             </div>
 
             <div className="budget-kpi-card budget-kpi-card--total">
               <span className="budget-kpi-icon">🏷️</span>
-              <span className="budget-kpi-label" style={{ color: 'var(--color-gold-light)' }}>Grand Total Budget</span>
+              <span className="budget-kpi-label" style={{ color: 'var(--color-gold-light)' }}>{t('budgetSection.grandTotal', 'Grand Total Budget')}</span>
               <strong className="budget-kpi-val" style={{ color: 'var(--color-white)', fontSize: 'var(--text-3xl)' }}>
                 ₹{b.total.toLocaleString()}
               </strong>
               {travelers > 1 && (
                 <span style={{ fontSize: 'var(--text-xs)', color: 'rgba(255, 255, 255, 0.8)' }}>
-                  ≈ ₹{b.perPerson.toLocaleString()} per person ({travelers} travellers)
+                  {t('budgetSection.perPerson', { cost: b.perPerson.toLocaleString(), count: travelers, defaultValue: `≈ ₹${b.perPerson.toLocaleString()} per person (${travelers} travellers)` })}
                 </span>
               )}
             </div>
@@ -338,7 +338,7 @@ export default function BudgetPage() {
               className="btn btn--outline"
               onClick={handleBackToHotels}
             >
-              ← Back to Hotel Booking
+              {t('budgetSection.backHotels', '← Back to Hotel Booking')}
             </button>
 
             {/* Prominently visible and working Next button */}
@@ -348,7 +348,7 @@ export default function BudgetPage() {
               className="btn btn--primary btn--lg budget-next-btn"
               onClick={handleNextToPayment}
             >
-              Proceed to Payment & Review (Step 7) →
+              {t('budgetSection.proceedPayment', 'Proceed to Payment & Review (Step 6) →')}
             </button>
           </div>
         </motion.div>

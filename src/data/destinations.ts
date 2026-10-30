@@ -27,6 +27,7 @@ export interface Destination {
   id: string;
   slug: string;
   name: string;
+  kannadaName?: string;
   district: string;
   region: Region;
   category: DestinationCategory;
@@ -1036,11 +1037,55 @@ export const destinations: Destination[] = [
   },
 ];
 
-// Guarantee authentic, verified image URLs for all Karnataka destinations
+const KANNADA_NAMES: Record<string, string> = {
+  'mysuru-palace': 'ಮೈಸೂರು ಅರಮನೆ',
+  'hampi': 'ಹಂಪಿ (ವಿಜಯನಗರ)',
+  'gol-gumbaz': 'ಗೋಲ್ ಗುಂಬಜ್ (ವಿಜಯಪುರ)',
+  'badami-caves': 'ಬಾದಾಮಿ ಗುಹಾಂತರ ದೇವಾಲಯಗಳು',
+  'pattadakal': 'ಪಟ್ಟದಕಲ್ಲು ಸ್ಮಾರಕಗಳು',
+  'aihole': 'ಐಹೊಳೆ ಐತಿಹಾಸಿಕ ಸಂಕೀರ್ಣ',
+  'belur': 'ಬೇಲೂರು ಚನ್ನಕೇಶವ ದೇವಾಲಯ',
+  'halebidu': 'ಹಳೇಬೀಡು ಹೊಯ್ಸಳೇಶ್ವರ ದೇವಾಲಯ',
+  'shravanabelagola': 'ಶ್ರವಣಬೆಳಗೊಳ (ಗೊಮ್ಮಟೇಶ್ವರ ಬಾಹುಬಲಿ)',
+  'chitradurga-fort': 'ಚಿತ್ರದುರ್ಗ ಏಳುಸುತ್ತಿನ ಕೋಟೆ',
+  'bidar-fort': 'ಬೀದರ್ ಕೋಟೆ & ಮಹಮೂದ್ ಗವಾನ್ ಮದ್ರಸಾ',
+  'coorg': 'ಕೊಡಗು (ಕೂರ್ಗ್ - ಮಲೆನಾಡಿನ ತಾಣ)',
+  'chikkamagaluru': 'ಚಿಕ್ಕಮಗಳೂರು (ಕಾಫಿ ನಾಡು)',
+  'nandi-hills': 'ನಂದಿ ಬೆಟ್ಟ (ನಂದಿದುರ್ಗ)',
+  'kemmangundi': 'ಕೆಮ್ಮಣ್ಣುಗುಂಡಿ ಗಿರಿಧಾಮ',
+  'kodachadri': 'ಕೊಡಚಾದ್ರಿ ಪರ್ವತ ಶ್ರೇಣಿ',
+  'agumbe': 'ಆಗುಂಬೆ (ದಕ್ಷಿಣದ ಚಿರಾಪುಂಜಿ)',
+  'br-hills': 'ಬಿಳಿಗಿರಿರಂಗನ ಬೆಟ್ಟ (ಬಿ.ಆರ್. ಹಿಲ್ಸ್)',
+  'gokarna': 'ಗೋಕರ್ಣ (ಓಂ ಬೀಚ್ & ಮಹಾಬಲೇಶ್ವರ)',
+  'murudeshwar': 'ಮುರುಡೇಶ್ವರ ಶಿವನ ದೇವಸ್ಥಾನ',
+  'malpe-beach': 'ಮಲ್ಪೆ ಕಡಲತೀರ & ಸೈಂಟ್ ಮೇರಿಸ್ ದ್ವೀಪ',
+  'karwar': 'ಕಾರವಾರ ರವೀಂದ್ರನಾಥ ಟ್ಯಾಗೋರ್ ಕಡಲತೀರ',
+  'jog-falls': 'ಜೋಗ್ ಜಲಪಾತ (ಶರಾವತಿ)',
+  'shivanasamudra-falls': 'ಶಿವನಸಮುದ್ರ ಜಲಪಾತ (ಗಗನಚುಕ್ಕಿ-ಭರಚುಕ್ಕಿ)',
+  'abbey-falls': 'ಅಬ್ಬಿ ಜಲಪಾತ (ಮಡಿಕೇರಿ)',
+  'bandipur': 'ಬಂಡೀಪುರ ಹುಲಿ ಸಂರಕ್ಷಿತ ಪ್ರದೇಶ',
+  'nagarhole': 'ನಾಗರಹೊಳೆ (ರಾಜೀವ್ ಗಾಂಧಿ ರಾಷ್ಟ್ರೀಯ ಉದ್ಯಾನ)',
+  'dandeli': 'ದಾಂಡೇಲಿ ಕಾಳಿ ನದಿ ಸಾಹಸ ತಾಣ',
+  'ranganathittu': 'ರಂಗನತಿಟ್ಟು ಪಕ್ಷಿಧಾಮ',
+  'mullayanagiri': 'ಮುಳ್ಳಯ್ಯನಗಿರಿ (ಕರ್ನಾಟಕದ ಅತಿ ಎತ್ತರದ ಶಿಖರ)',
+  'iruppu-falls': 'ಇರುಪ್ಪು ಜಲಪಾತ (ಲಕ್ಷ್ಮಣತೀರ್ಥ)',
+  'kabini': 'ಕಬಿನಿ ನದಿ ತೀರ & ವನ್ಯಜೀವಿ ಸಫಾರಿ',
+  'bengaluru-heritage': 'ಬೆಂಗಳೂರು ಪಾರಂಪರಿಕ ಉದ್ಯಾನಗಳು',
+  'antaragange': 'ಅಂತರಗಂಗೆ ಗುಹೆಗಳು & ಚಾರಣ',
+  'kotilingeshwara': 'ಕೋಟிலிಂಗೇಶ್ವರ ಕ್ಷೇತ್ರ (ಕಮ್ಮಸಂದ್ರ)',
+  'devarayanadurga': 'ದೇವರಾಯನದುರ್ಗ ಯೋಗ ನರಸಿಂಹ ಕ್ಷೇತ್ರ',
+};
+
+// Guarantee authentic, verified image URLs & Kannada names for all Karnataka destinations
 destinations.forEach(d => {
+  if (KANNADA_NAMES[d.id]) {
+    d.kannadaName = KANNADA_NAMES[d.id];
+  } else if (!d.kannadaName) {
+    d.kannadaName = d.name;
+  }
   if (DESTINATION_IMAGES[d.id]) {
     d.imageUrl = DESTINATION_IMAGES[d.id].url;
-    d.imageAttribution = DESTINATION_IMAGES[d.id].attribution;
+    d.imageAttribution = DESTINATION_IMAGES[d.id].attribution || DESTINATION_IMAGES[d.id].credit || 'Karnataka Tourism / Unsplash';
   }
 });
 

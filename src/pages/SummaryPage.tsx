@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useTrip } from '../context/TripContext';
 import { destinations as allDests } from '../data/destinations';
+import { KARNATAKA_FALLBACK_IMAGE } from '../data/destinationImages';
 import StepIndicator from '../components/StepIndicator';
 import '../components/StepIndicator.css';
 
@@ -77,8 +78,16 @@ export default function SummaryPage() {
                 return (
                   <motion.div key={d.destinationId} className="summary-dest"
                     initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}>
-                    <img src={d.imageUrl} alt={d.name} className="summary-dest__img"
-                      onError={e => { (e.target as HTMLImageElement).src = `https://placehold.co/120x80/2D5A3D/FAF7F2?text=${encodeURIComponent(d.name)}`; }} />
+                    <img
+                      src={d.imageUrl || KARNATAKA_FALLBACK_IMAGE}
+                      alt={d.name}
+                      className="summary-dest__img"
+                      onError={e => {
+                        const target = e.currentTarget;
+                        target.onerror = null;
+                        target.src = KARNATAKA_FALLBACK_IMAGE;
+                      }}
+                    />
                     <div className="summary-dest__info">
                       <h4>{d.name}</h4>
                       <p>{full?.district || ''} • {d.duration}</p>

@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { getDestinationBySlug, getCategoryIcon, getRegionLabel, destinations } from '../data/destinations';
-import { DESTINATION_IMAGES } from '../data/destinationImages';
+import { DESTINATION_IMAGES, KARNATAKA_FALLBACK_IMAGE } from '../data/destinationImages';
 import { useApp } from '../context/AppContext';
 import { useTrip, SelectedDestination } from '../context/TripContext';
 import './DestinationPage.css';
@@ -77,7 +77,9 @@ export default function DestinationPage() {
           alt={dest.name}
           loading="eager"
           onError={e => {
-            (e.target as HTMLImageElement).src = `https://images.unsplash.com/photo-1600100561600-44d5e3cba921?w=1200&q=80`;
+            const target = e.currentTarget;
+            target.onerror = null;
+            target.src = KARNATAKA_FALLBACK_IMAGE;
           }}
         />
         <div className="dest-page__hero-overlay">

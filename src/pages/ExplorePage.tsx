@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { destinations, getCategoryIcon, getRegionLabel, searchDestinations } from '../data/destinations';
 import type { DestinationCategory, Region } from '../data/destinations';
+import { DESTINATION_IMAGES, KARNATAKA_FALLBACK_IMAGE } from '../data/destinationImages';
 import './ExplorePage.css';
 
 export default function ExplorePage() {
@@ -101,27 +102,39 @@ export default function ExplorePage() {
           </div>
         ) : (
           <div className="explore-page__grid">
-            {filtered.map((dest, i) => (
-              <motion.div
-                key={dest.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.3 }}
-              >
-                <Link to={`/destinations/${dest.slug}`} className="dest-card">
-                  <div className="dest-card__image">
-                    <img src={dest.imageUrl} alt={dest.name} loading="lazy" onError={e => { (e.target as HTMLImageElement).src = `https://placehold.co/600x400/2D5A3D/FAF7F2?text=${encodeURIComponent(dest.name)}`; }} />
-                    <span className="dest-card__badge">{getCategoryIcon(dest.category)} {dest.category}</span>
-                  </div>
-                  <div className="dest-card__body">
-                    <h3 className="dest-card__title">{dest.name}</h3>
-                    <p className="dest-card__meta">📍 {dest.district} • {getRegionLabel(dest.region)} • {dest.recommendedDuration}</p>
-                    <p className="dest-card__desc">{dest.shortDescription}</p>
-                    <span className="dest-card__action">{t('discover.explorePlace')} →</span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+            {filtered.map((dest, i) => {
+              const img = DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl || KARNATAKA_FALLBACK_IMAGE;
+              return (
+                <motion.div
+                  key={dest.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04, duration: 0.3 }}
+                >
+                  <Link to={`/destinations/${dest.slug}`} className="dest-card">
+                    <div className="dest-card__image">
+                      <img
+                        src={img}
+                        alt={dest.name}
+                        loading="lazy"
+                        onError={e => {
+                          const target = e.currentTarget;
+                          target.onerror = null;
+                          target.src = KARNATAKA_FALLBACK_IMAGE;
+                        }}
+                      />
+                      <span className="dest-card__badge">{getCategoryIcon(dest.category)} {dest.category}</span>
+                    </div>
+                    <div className="dest-card__body">
+                      <h3 className="dest-card__title">{dest.name}</h3>
+                      <p className="dest-card__meta">📍 {dest.district} • {getRegionLabel(dest.region)} • {dest.recommendedDuration}</p>
+                      <p className="dest-card__desc">{dest.shortDescription}</p>
+                      <span className="dest-card__action">{t('discover.explorePlace')} →</span>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

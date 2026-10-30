@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { destinations as allDestinations } from '../data/destinations';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 // ==================== TYPES ====================
 
@@ -23,6 +24,7 @@ export interface TripPreferences {
   dietaryPreferences: string;
   packedOrRelaxed: 'relaxed' | 'packed' | 'balanced';
   preferredLanguage: string;
+  budgetRange?: 'economy' | 'mid' | 'premium';
 }
 
 export interface SelectedDestination {
@@ -33,6 +35,10 @@ export interface SelectedDestination {
   duration: string;
   reason: string;
   day?: number;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface TransportOption {
@@ -106,6 +112,7 @@ export interface BudgetBreakdown {
   activities: number;
   packageFee: number;
   miscellaneous: number;
+  contingency?: number;
   taxes: number;
   total: number;
   perPerson: number;
@@ -158,6 +165,7 @@ const defaultBudget: BudgetBreakdown = {
   activities: 0,
   packageFee: 0,
   miscellaneous: 0,
+  contingency: 0,
   taxes: 0,
   total: 0,
   perPerson: 0,
@@ -271,6 +279,7 @@ export function calculateTripBudget(
     activities,
     packageFee,
     miscellaneous,
+    contingency: miscellaneous,
     taxes,
     total,
     perPerson: Math.round(total / travelers),
@@ -521,20 +530,13 @@ interface TripContextType {
 const TripContext = createContext<TripContextType | null>(null);
 
 export const PLAN_STEPS = [
-<<<<<<< HEAD
-  { path: '/plan/preferences', label: 'Preferences' },
-  { path: '/plan/compass', label: 'Compass' },
-  { path: '/plan/recommendations', label: 'Destinations' },
-  { path: '/plan/package', label: 'Package' },
-=======
-  { path: '/onboarding', label: 'Onboarding' },
-  { path: '/dashboard', label: 'Destinations' },
->>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
-  { path: '/plan/transport', label: 'Transport' },
-  { path: '/plan/hotels', label: 'Hotels' },
-  { path: '/plan/budget', label: 'Budget' },
-  { path: '/plan/payment', label: 'Payment' },
-  { path: '/plan/confirmation', label: 'Travel Pass' },
+  { path: '/onboarding', label: 'Onboarding', key: 'step1' },
+  { path: '/dashboard', label: 'Destinations', key: 'step2' },
+  { path: '/plan/transport', label: 'Transport', key: 'step3' },
+  { path: '/plan/hotels', label: 'Hotels', key: 'step4' },
+  { path: '/plan/budget', label: 'Budget', key: 'step5' },
+  { path: '/plan/payment', label: 'Payment', key: 'step6' },
+  { path: '/plan/confirmation', label: 'Travel Pass', key: 'step7' },
 ];
 
 export function TripProvider({ children }: { children: ReactNode }) {
@@ -574,4 +576,31 @@ export function useTrip() {
   const ctx = useContext(TripContext);
   if (!ctx) throw new Error('useTrip must be used within TripProvider');
   return ctx;
+}
+
+export async function saveTripToSupabase(trip: TripState, userId: string): Promise<{ success: boolean; error?: string }> {
+  if (!isSupabaseConfigured || !userId) {
+    return { success: true };
+  }
+  try {
+    const tripName = trip.tripName || `${trip.selectedDestinations.length} destination Karnataka trip`;
+    const { error } = await supabase.from('travel_plans').upsert({
+      ...(trip.tripId ? { id: trip.tripId } : {}),
+      user_id: userId,
+      trip_name: tripName,
+      trip_data: trip,
+      status: trip.paymentStatus === 'demo_confirmed' || trip.paymentStatus === 'confirmed' ? 'complete' : 'draft',
+      total_budget: trip.budget.total,
+      destinations_count: trip.selectedDestinations.length,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) {
+      console.warn('Supabase save error:', error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Failed to save trip to Supabase';
+    return { success: false, error: msg };
+  }
 }

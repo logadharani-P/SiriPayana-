@@ -1,93 +1,422 @@
-.step-indicator { padding: var(--space-4) 0; margin-bottom: var(--space-6); overflow-x: auto; }
-.step-indicator__track { display: flex; align-items: flex-start; min-width: 600px; }
-.step-indicator__item { display: flex; align-items: center; flex: 1; position: relative; }
-.step-indicator__item:last-child { flex: 0; }
+/* ============================================================
+   Step Indicator Component — 7-Step Planning Progress Bar
+   Responsive across Desktop (1920, 1440, 1366), Tablet (768), Mobile (425, 375)
+   ============================================================ */
+
+.step-indicator {
+  padding: var(--space-4) 0;
+  margin-bottom: var(--space-8);
+  width: 100%;
+  position: relative;
+  overflow: visible;
+}
+
+.step-indicator__track {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-indicator__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  text-align: center;
+}
+
+/* Connecting track line between dots */
+.step-indicator__line {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  width: 100%;
+  height: 3px;
+  background: var(--color-gray-200);
+  z-index: 1;
+  transition: background var(--transition-base);
+}
+
+.step-indicator__line--done {
+  background: var(--color-forest-light);
+}
+
+/* Circular step indicator dot */
 .step-indicator__dot {
-  width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--color-gray-300);
-  background: var(--color-white); color: var(--color-gray-400); font-size: var(--text-sm);
-  font-weight: var(--font-bold); display: flex; align-items: center; justify-content: center;
-  cursor: default; transition: all var(--transition-fast); flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--color-gray-300);
+  background: var(--color-white);
+  color: var(--color-gray-400);
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
+
+.step-indicator__check {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.step-indicator__num {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Active Step */
 .step-indicator__item--active .step-indicator__dot {
-  border-color: var(--color-forest); background: var(--color-forest); color: var(--color-white);
-  box-shadow: 0 0 0 4px rgba(45,90,61,0.15);
+  border-color: var(--color-forest);
+  background: var(--color-forest);
+  color: var(--color-white);
+  box-shadow: 0 0 0 4px rgba(45, 90, 61, 0.2);
+  transform: scale(1.08);
 }
+
+/* Completed Step */
 .step-indicator__item--done .step-indicator__dot {
-  border-color: var(--color-forest); background: var(--color-forest-light); color: var(--color-white);
+  border-color: var(--color-forest-light);
+  background: var(--color-forest-light);
+  color: var(--color-white);
   cursor: pointer;
 }
-.step-indicator__label {
-  position: absolute; top: 42px; left: 50%; transform: translateX(-50%);
-  font-size: var(--text-xs); color: var(--color-gray-500); white-space: nowrap; text-align: center;
-}
-.step-indicator__item--active .step-indicator__label { color: var(--color-forest); font-weight: var(--font-semibold); }
-.step-indicator__item--done .step-indicator__label { color: var(--color-forest-light); }
-.step-indicator__line {
-  flex: 1; height: 2px; background: var(--color-gray-200); margin: 0 var(--space-2);
-}
-.step-indicator__line--done { background: var(--color-forest-light); }
 
-/* === Plan Page Layout === */
-.plan-page { padding-bottom: var(--space-16); min-height: 100vh; }
+.step-indicator__item--done .step-indicator__dot:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(61, 122, 82, 0.25);
+}
+
+/* Step Label Wrap (Normal layout flow — no clipping or overlap!) */
+.step-indicator__label-wrap {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 2px;
+}
+
+.step-indicator__step-num {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-gray-400);
+  font-weight: var(--font-semibold);
+  margin-bottom: 2px;
+}
+
+.step-indicator__label {
+  font-size: 12px;
+  color: var(--color-gray-600);
+  font-weight: var(--font-medium);
+  text-align: center;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100px;
+  transition: color var(--transition-fast);
+}
+
+.step-indicator__item--active .step-indicator__step-num {
+  color: var(--color-gold-dark);
+}
+
+.step-indicator__item--active .step-indicator__label {
+  color: var(--color-forest);
+  font-weight: var(--font-bold);
+}
+
+.step-indicator__item--done .step-indicator__label {
+  color: var(--color-forest-dark);
+}
+
+/* Mobile summary banner (visible only on mobile) */
+.step-indicator__mobile-summary {
+  display: none;
+}
+
+/* === Responsive Breakpoints === */
+
+/* Tablet (768px down to 601px) */
+@media (max-width: 768px) {
+  .step-indicator {
+    padding: var(--space-3) 0;
+    margin-bottom: var(--space-6);
+  }
+  .step-indicator__dot {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  .step-indicator__line {
+    top: 16px;
+    height: 2px;
+  }
+  .step-indicator__step-num {
+    display: none;
+  }
+  .step-indicator__label {
+    font-size: 11px;
+    max-width: 75px;
+  }
+}
+
+/* Mobile (600px down to 320px) */
+@media (max-width: 600px) {
+  .step-indicator {
+    padding: var(--space-2) 0;
+    margin-bottom: var(--space-5);
+  }
+  .step-indicator__track {
+    padding: 0 var(--space-1);
+  }
+  .step-indicator__dot {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+    border-width: 2px;
+  }
+  .step-indicator__line {
+    top: 14px;
+    height: 2px;
+  }
+  .step-indicator__step-num {
+    display: none;
+  }
+  .step-indicator__label {
+    font-size: 10px;
+    max-width: 48px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+
+  /* Show active step banner clearly below the 7 dots */
+  .step-indicator__mobile-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    background: rgba(45, 90, 61, 0.07);
+    border: 1px solid rgba(45, 90, 61, 0.15);
+    border-radius: var(--radius-full);
+  }
+  .step-indicator__mobile-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-forest);
+    letter-spacing: 0.5px;
+  }
+  .step-indicator__mobile-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-forest-dark);
+  }
+}
+
+/* === Plan Page Layout Rules === */
+.plan-page {
+  padding-bottom: var(--space-16);
+  min-height: 100vh;
+}
+
 .plan-page__header {
   background: linear-gradient(135deg, var(--color-forest-dark), var(--color-forest));
   padding: calc(var(--nav-height) + var(--space-8)) 0 var(--space-6);
-  color: var(--color-white); margin-bottom: var(--space-4);
+  color: var(--color-white);
+  margin-bottom: var(--space-4);
 }
-.plan-page__header h1 { font-size: var(--text-3xl); color: var(--color-white); margin-bottom: var(--space-1); }
-.plan-page__header p { font-size: var(--text-sm); color: rgba(255,255,255,0.7); }
-.plan-page__body { padding-top: var(--space-4); }
+
+.plan-page__header h1 {
+  font-size: var(--text-3xl);
+  color: var(--color-white);
+  margin-bottom: var(--space-1);
+}
+
+.plan-page__header p {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.plan-page__body {
+  padding-top: var(--space-4);
+}
+
 .plan-page__actions {
-  display: flex; justify-content: space-between; align-items: center; gap: var(--space-4);
-  padding-top: var(--space-8); border-top: 1px solid var(--color-gray-100); margin-top: var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--color-gray-100);
+  margin-top: var(--space-8);
   flex-wrap: wrap;
 }
-.plan-page__actions-right { display: flex; gap: var(--space-3); }
+
+.plan-page__actions-right {
+  display: flex;
+  gap: var(--space-3);
+}
 
 /* === Form Sections === */
-.form-section { margin-bottom: var(--space-8); }
-.form-section__title {
-  font-family: var(--font-display); font-size: var(--text-xl); color: var(--color-forest-dark);
-  margin-bottom: var(--space-4); padding-bottom: var(--space-2); border-bottom: 2px solid var(--color-gold-light);
+.form-section {
+  margin-bottom: var(--space-8);
 }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
-.form-row--3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.form-section__title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-forest-dark);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--color-gold-light);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.form-row--3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
 
 /* === Choice Chips === */
-.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.chip {
-  padding: var(--space-2) var(--space-4); border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-full); font-size: var(--text-sm); color: var(--color-gray-600);
-  background: var(--color-white); cursor: pointer; transition: all var(--transition-fast);
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
-.chip:hover { border-color: var(--color-forest); color: var(--color-forest); }
-.chip--selected { background: var(--color-forest); color: var(--color-white); border-color: var(--color-forest); }
+
+.chip {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  color: var(--color-gray-600);
+  background: var(--color-white);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.chip:hover {
+  border-color: var(--color-forest);
+  color: var(--color-forest);
+}
+
+.chip--selected {
+  background: var(--color-forest);
+  color: var(--color-white);
+  border-color: var(--color-forest);
+}
 
 /* === Selection Cards === */
 .selection-card {
-  border: 2px solid var(--color-gray-100); border-radius: var(--radius-lg);
-  padding: var(--space-6); cursor: pointer; transition: all var(--transition-base);
+  border: 2px solid var(--color-gray-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  cursor: pointer;
+  transition: all var(--transition-base);
   background: var(--color-white);
 }
-.selection-card:hover { border-color: var(--color-forest-light); box-shadow: var(--shadow-md); }
-.selection-card--selected { border-color: var(--color-forest); background: rgba(45,90,61,0.03); box-shadow: 0 0 0 3px rgba(45,90,61,0.1); }
-.selection-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-3); }
-.selection-card__title { font-family: var(--font-display); font-size: var(--text-xl); color: var(--color-forest-dark); }
-.selection-card__price { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--color-gold-dark); }
-.selection-card__features { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
-.selection-card__features li { font-size: var(--text-sm); color: var(--color-gray-600); padding-left: var(--space-5); position: relative; }
-.selection-card__features li::before { content: '✓'; position: absolute; left: 0; color: var(--color-forest); font-weight: bold; }
+
+.selection-card:hover {
+  border-color: var(--color-forest-light);
+  box-shadow: var(--shadow-md);
+}
+
+.selection-card--selected {
+  border-color: var(--color-forest);
+  background: rgba(45, 90, 61, 0.03);
+  box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.1);
+}
+
+.selection-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.selection-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-forest-dark);
+}
+
+.selection-card__price {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--color-gold-dark);
+}
+
+.selection-card__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.selection-card__features li {
+  font-size: var(--text-sm);
+  color: var(--color-gray-600);
+  padding-left: var(--space-5);
+  position: relative;
+}
+
+.selection-card__features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-forest);
+  font-weight: bold;
+}
 
 /* === Demo Badge === */
 .demo-badge {
-  display: inline-flex; align-items: center; gap: var(--space-1);
-  padding: 2px var(--space-3); background: rgba(212,148,10,0.1); border: 1px solid rgba(212,148,10,0.3);
-  border-radius: var(--radius-full); font-size: var(--text-xs); color: var(--color-warning); font-weight: var(--font-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-3);
+  background: rgba(212, 148, 10, 0.1);
+  border: 1px solid rgba(212, 148, 10, 0.3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--color-warning);
+  font-weight: var(--font-semibold);
 }
 
 @media (max-width: 640px) {
-  .form-row, .form-row--3 { grid-template-columns: 1fr; }
-  .step-indicator__track { min-width: auto; }
-  .step-indicator__label { display: none; }
-  .plan-page__actions { flex-direction: column; }
+  .form-row,
+  .form-row--3 {
+    grid-template-columns: 1fr;
+  }
+  .plan-page__actions {
+    flex-direction: column;
+  }
 }

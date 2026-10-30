@@ -387,6 +387,13 @@
   color: var(--color-forest);
 }
 
+.navbar__mobile-link--active {
+  background: rgba(45, 90, 61, 0.12);
+  color: var(--color-forest);
+  font-weight: var(--font-bold);
+  border-left: 3px solid var(--color-forest);
+}
+
 .navbar__mobile-lang {
   border-top: 1px solid var(--color-gray-100);
   padding-top: var(--space-4);

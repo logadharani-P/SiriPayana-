@@ -1,23 +1,14 @@
-<<<<<<< HEAD
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { useApp } from '../context/AppContext';
-import { supabase } from '../lib/supabaseClient';
-import { destinations } from '../data/destinations';
-import { useTrip } from '../context/TripContext';
-import type { TripState } from '../context/TripContext';
-=======
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTrip, SelectedDestination } from '../context/TripContext';
+import { useTrip, SelectedDestination, TripState } from '../context/TripContext';
+import { useApp } from '../context/AppContext';
 import { destinations, Destination, Region, getDestinationsByRegion } from '../data/destinations';
-import { REGIONAL_IMAGES, DESTINATION_IMAGES } from '../data/destinationImages';
+import { REGIONAL_IMAGES, DESTINATION_IMAGES, KARNATAKA_FALLBACK_IMAGE } from '../data/destinationImages';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { validateTravelFeasibility } from '../utils/travelFeasibility';
 import StepIndicator from '../components/StepIndicator';
->>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
 import './DashboardPage.css';
 
 interface SavedTrip {
@@ -33,71 +24,11 @@ interface SavedTrip {
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-<<<<<<< HEAD
-  const { state, showToast } = useApp();
-  const { resetTrip, dispatch } = useTrip();
-  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
-  const [loadingTrips, setLoadingTrips] = useState(true);
-
-  const loadTrips = useCallback(async () => {
-    if (!state.user) return;
-    setLoadingTrips(true);
-    const { data, error } = await supabase
-      .from('travel_plans')
-      .select('id, trip_name, trip_data, status, total_budget, destinations_count, created_at, updated_at')
-      .order('updated_at', { ascending: false });
-    if (error) {
-      showToast('Could not load saved trips.', 'error');
-    } else {
-      setSavedTrips((data || []) as SavedTrip[]);
-    }
-    setLoadingTrips(false);
-  }, [state.user, showToast]);
-
-  useEffect(() => {
-    loadTrips();
-  }, [loadTrips]);
-
-  const handleDeleteTrip = async (id: string) => {
-    const { error } = await supabase.from('travel_plans').delete().eq('id', id);
-    if (error) {
-      showToast('Could not delete trip.', 'error');
-    } else {
-      showToast('Trip deleted.', 'info');
-      setSavedTrips(prev => prev.filter(trip => trip.id !== id));
-    }
-  };
-
-  const handleResumeTrip = (trip: SavedTrip) => {
-    const tripData = trip.trip_data;
-    if (tripData) {
-      dispatch({ type: 'LOAD_TRIP', payload: tripData });
-      if (trip.status === 'complete') {
-        showToast('Loaded saved trip — review and continue from preferences.', 'info');
-      }
-    }
-    window.location.href = '/plan/preferences';
-  };
-
-  if (state.isLoadingAuth) {
-    return (
-      <div className="dashboard">
-        <div className="container" style={{ paddingTop: 'calc(var(--nav-height) + var(--space-10))' }}>
-          <div className="empty-state">
-            <div className="empty-state__icon">⏳</div>
-            <h2 className="empty-state__title">Loading…</h2>
-            <p className="empty-state__description">Checking your session.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-=======
   const { trip, dispatch, goToStep } = useTrip();
+  const { state, showToast } = useApp();
   const navigate = useNavigate();
->>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
 
-  // Active region filter ('all' for compass overview, or 'north' | 'south' | 'east' | 'west')
+  // Active region filter ('all' or 'north' | 'south' | 'east' | 'west')
   const [selectedRegion, setSelectedRegion] = useState<Region | 'all'>('all');
   // Destination for dedicated detail view
   const [activeDetailDest, setActiveDetailDest] = useState<Destination | null>(null);
@@ -107,7 +38,69 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
+  // Saved trips drawer / toggle
+  const [showSavedTrips, setShowSavedTrips] = useState(false);
+  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
+  const [loadingTrips, setLoadingTrips] = useState(false);
+
   const selectedCount = trip.selectedDestinations.length;
+
+  // Travel Feasibility Calculation (Requirement 8)
+  const feasibility = useMemo(() => {
+    return validateTravelFeasibility(
+      trip.preferences.startingCity,
+      trip.preferences.duration,
+      trip.preferences.adults + trip.preferences.children,
+      trip.selectedDestinations
+    );
+  }, [
+    trip.preferences.startingCity,
+    trip.preferences.duration,
+    trip.preferences.adults,
+    trip.preferences.children,
+    trip.selectedDestinations,
+  ]);
+
+  const loadSavedTrips = useCallback(async () => {
+    if (!state.user || !isSupabaseConfigured) return;
+    setLoadingTrips(true);
+    try {
+      const { data, error } = await supabase
+        .from('travel_plans')
+        .select('id, trip_name, trip_data, status, total_budget, destinations_count, created_at, updated_at')
+        .order('updated_at', { ascending: false });
+      if (!error && data) {
+        setSavedTrips(data as SavedTrip[]);
+      }
+    } catch (e) {
+      console.warn('Could not load saved trips:', e);
+    } finally {
+      setLoadingTrips(false);
+    }
+  }, [state.user]);
+
+  useEffect(() => {
+    if (state.isAuthenticated && isSupabaseConfigured) {
+      loadSavedTrips();
+    }
+  }, [state.isAuthenticated, loadSavedTrips]);
+
+  const handleResumeTrip = (st: SavedTrip) => {
+    if (st.trip_data) {
+      dispatch({ type: 'LOAD_TRIP', payload: st.trip_data });
+      showToast(`Loaded saved trip: ${st.trip_name}`, 'info');
+      setShowSavedTrips(false);
+    }
+  };
+
+  const handleDeleteTrip = async (id: string) => {
+    if (!isSupabaseConfigured) return;
+    const { error } = await supabase.from('travel_plans').delete().eq('id', id);
+    if (!error) {
+      setSavedTrips(prev => prev.filter(p => p.id !== id));
+      showToast('Trip deleted from account.', 'info');
+    }
+  };
 
   const isDestinationSelected = (id: string) => {
     return trip.selectedDestinations.some(d => d.destinationId === id);
@@ -121,33 +114,52 @@ export default function DashboardPage() {
         destinationId: dest.id,
         slug: dest.slug,
         name: dest.name,
-        imageUrl: DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl,
+        imageUrl: DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl || KARNATAKA_FALLBACK_IMAGE,
         duration: dest.recommendedDuration,
         reason: `${dest.category.toUpperCase()} • ${dest.district}`,
+        coordinates: {
+          lat: dest.latitude,
+          lng: dest.longitude,
+        },
       };
       dispatch({ type: 'ADD_DESTINATION', payload: sel });
     }
   };
 
   const handleProceedToTransport = () => {
-    if (selectedCount === 0) return;
-    goToStep(2);
+    if (selectedCount === 0) {
+      showToast('Please select at least one destination to proceed.', 'error');
+      return;
+    }
+    goToStep(2); // Step 3 in 1-based indexing (Transport)
     navigate('/plan/transport');
   };
 
-  // Filter destinations
-  const currentRegionDestinations = selectedRegion === 'all'
-    ? destinations
-    : getDestinationsByRegion(selectedRegion);
+  // Comprehensive destination search across all fields
+  const filteredDestinations = useMemo(() => {
+    const list = selectedRegion === 'all'
+      ? destinations
+      : getDestinationsByRegion(selectedRegion);
 
-  const filteredDestinations = currentRegionDestinations.filter(d => {
-    const matchesSearch =
-      d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.shortDescription.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === 'all' || d.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+    const q = searchQuery.toLowerCase().trim();
+
+    return list.filter(d => {
+      const matchesCategory = activeCategory === 'all' || d.category === activeCategory;
+      if (!matchesCategory) return false;
+
+      if (!q) return true;
+
+      const nameMatch = d.name.toLowerCase().includes(q);
+      const kannadaMatch = d.kannadaName ? d.kannadaName.toLowerCase().includes(q) : false;
+      const districtMatch = d.district.toLowerCase().includes(q);
+      const descMatch = d.shortDescription.toLowerCase().includes(q);
+      const categoryMatch = d.category.toLowerCase().includes(q);
+      const regionMatch = d.region.toLowerCase().includes(q);
+      const highlightsMatch = d.specialAttractions?.some(a => a.toLowerCase().includes(q)) ?? false;
+
+      return nameMatch || kannadaMatch || districtMatch || descMatch || categoryMatch || regionMatch || highlightsMatch;
+    });
+  }, [selectedRegion, searchQuery, activeCategory]);
 
   const regionsList: { key: Region; name: string; kannadaName: string; icon: string; count: number }[] = [
     { key: 'north', name: 'North Karnataka', kannadaName: 'ಉತ್ತರ ಕರ್ನಾಟಕ', icon: '🏛️', count: getDestinationsByRegion('north').length },
@@ -158,113 +170,133 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-page">
-      {/* Page Header */}
+      {/* Page Header (Requirement 5: Synchronized Heading) */}
       <div className="dashboard-page__header">
         <div className="container">
-<<<<<<< HEAD
-          <h1 className="dashboard__title">{t('dashboard.title')}</h1>
-          <p className="dashboard__welcome">Welcome back, {state.profileName}!</p>
-        </div>
-      </div>
-      <div className="container">
-        {/* Stats */}
-        <div className="dashboard__stats">
-          <div className="dashboard__stat-card">
-            <span className="dashboard__stat-icon">❤️</span>
-            <span className="dashboard__stat-number">{state.favorites.length}</span>
-            <span className="dashboard__stat-label">{t('dashboard.favorites')}</span>
-          </div>
-          <div className="dashboard__stat-card">
-            <span className="dashboard__stat-icon">📍</span>
-            <span className="dashboard__stat-number">{state.savedDestinations.length}</span>
-            <span className="dashboard__stat-label">{t('dashboard.savedDestinations')}</span>
-          </div>
-          <div className="dashboard__stat-card">
-            <span className="dashboard__stat-icon">📋</span>
-            <span className="dashboard__stat-number">{savedTrips.length}</span>
-            <span className="dashboard__stat-label">{t('dashboard.itineraries')}</span>
-          </div>
-        </div>
-=======
           <div className="dashboard-header-inner">
             <div>
-              <span className="dashboard-eyebrow">Step 2 & 3 • Karnataka Exploration</span>
-              <h1>🧭 Four Directions of Karnataka</h1>
+              <span className="dashboard-eyebrow">{t('dashboardSection.eyebrow', 'STEP 2 • DESTINATION SELECTION')}</span>
+              <h1>🧭 {t('dashboardSection.title', 'Destination Selection')}</h1>
               <p>
-                Explore North, South, East, and West Karnataka. Select as many destinations as you wish—there is no limit!
+                {t('dashboardSection.subtitle', 'Explore North, South, East, and West Karnataka. Select as many destinations as you wish—there is no 5-place limit!')}
               </p>
             </div>
-            {trip.preferences.startingCity && (
-              <div className="dashboard-trip-meta">
-                <span>📍 From: <strong>{trip.preferences.startingCity}</strong></span>
-                <span>📅 <strong>{trip.preferences.duration} Days</strong></span>
-                <span>👥 <strong>{trip.preferences.adults + trip.preferences.children} Travellers</strong></span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 'var(--space-2)' }}>
+              {trip.preferences.startingCity && (
+                <div className="dashboard-trip-meta">
+                  <span>📍 {t('dashboardSection.origin', 'Origin')}: <strong>{trip.preferences.startingCity}</strong></span>
+                  <span>📅 <strong>{trip.preferences.duration} {t('dashboardSection.days', 'Days')}</strong></span>
+                  <span>👥 <strong>{trip.preferences.adults + trip.preferences.children} {t('dashboardSection.travellers', 'Travellers')}</strong></span>
+                </div>
+              )}
+              {state.isAuthenticated && isSupabaseConfigured && savedTrips.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn--outline btn--sm"
+                  style={{ background: 'rgba(255, 255, 255, 0.15)', borderColor: 'var(--color-gold-light)', color: '#fff' }}
+                  onClick={() => setShowSavedTrips(!showSavedTrips)}
+                >
+                  📁 {showSavedTrips ? t('dashboardSection.returnExploration', 'Return to Exploration') : `${t('dashboardSection.savedTrips', 'Saved Trips')} (${savedTrips.length})`}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container dashboard-page__body">
+        {/* Step Indicator (Requirement 2) */}
+        <StepIndicator />
+
+        {/* ================= SAVED TRIPS DRAWER (IF TOGGLED) ================= */}
+        {showSavedTrips && (
+          <div className="saved-trips-section" style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)', background: 'var(--color-gray-50)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-gray-200)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+              <h3 style={{ margin: 0, color: 'var(--color-forest-dark)' }}>Saved Trips in Your Supabase Account</h3>
+              <button className="btn btn--outline btn--sm" onClick={() => setShowSavedTrips(false)}>✕ Close</button>
+            </div>
+            {loadingTrips ? (
+              <p>Loading trips from Supabase...</p>
+            ) : savedTrips.length === 0 ? (
+              <p>No saved trips found.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
+                {savedTrips.map(st => (
+                  <div key={st.id} style={{ background: '#fff', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-gray-200)', boxShadow: 'var(--shadow-sm)' }}>
+                    <h4 style={{ margin: '0 0 var(--space-1) 0', color: 'var(--color-forest-dark)' }}>{st.trip_name}</h4>
+                    <p style={{ margin: '0 0 var(--space-2) 0', fontSize: 'var(--text-xs)', color: 'var(--color-gray-600)' }}>
+                      {st.destinations_count} destinations • ₹{Number(st.total_budget).toLocaleString()}
+                    </p>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <button className="btn btn--primary btn--sm" onClick={() => handleResumeTrip(st)}>Load Trip</button>
+                      <button className="btn btn--outline btn--sm" style={{ color: '#ef4444', borderColor: '#fca5a5' }} onClick={() => handleDeleteTrip(st.id)}>Delete</button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
-      </div>
->>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
+        )}
 
-      <div className="container dashboard-page__body">
-        <StepIndicator />
+        {/* ================= TRAVEL FEASIBILITY ADVISORY (Requirement 8) ================= */}
+        {selectedCount > 0 && (
+          <div className={`feasibility-widget feasibility-widget--${feasibility.status}`}>
+            <div className="feasibility-header">
+              <div className="feasibility-title-wrap">
+                <span className={`feasibility-badge feasibility-badge--${feasibility.status}`}>
+                  {feasibility.status === 'optimal'
+                    ? '✓ Well Paced'
+                    : feasibility.status === 'moderate'
+                    ? '⚡ Moderate Pace'
+                    : feasibility.status === 'tight'
+                    ? '⚠️ Tight Schedule'
+                    : '⚠️ High Travel Load'}
+                </span>
+                <strong style={{ fontSize: 'var(--text-base)', color: 'var(--color-forest-dark)' }}>
+                  {feasibility.title}
+                </strong>
+              </div>
+              <div className="feasibility-stats-pills">
+                <span className="feasibility-pill">📍 {selectedCount} Selected</span>
+                <span className="feasibility-pill">🗺️ ~{feasibility.totalEstimatedKm} km Route</span>
+                <span className="feasibility-pill">⏱️ ~{feasibility.totalEstimatedTravelHours} hrs Transit</span>
+                <span className="feasibility-pill">📅 ~{feasibility.recommendedDays} Days Recommended ({trip.preferences.duration} Available)</span>
+              </div>
+            </div>
+            <p style={{ margin: 'var(--space-2) 0', fontSize: 'var(--text-sm)', color: 'var(--color-gray-700)' }}>
+              {feasibility.summary}
+            </p>
+            {feasibility.warnings.length > 0 && (
+              <div className="feasibility-warnings">
+                <strong style={{ display: 'block', marginBottom: '4px' }}>⚠️ Pacing Advisories:</strong>
+                <ul>
+                  {feasibility.warnings.map((w, idx) => (
+                    <li key={idx}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {feasibility.suggestions.length > 0 && (
+              <div className="feasibility-suggestions">
+                <strong style={{ display: 'block', marginBottom: '4px' }}>💡 SiriPayana Travel Advice:</strong>
+                <ul>
+                  {feasibility.suggestions.map((s, idx) => (
+                    <li key={idx}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* ================= COMPASS / 4-DIRECTION HUB ================= */}
-        {selectedRegion === 'all' ? (
+        {/* ================= FOUR DIRECTIONS OVERVIEW (COMPASS CARDS) ================= */}
+        {selectedRegion === 'all' && (
           <div className="compass-section">
             <div className="compass-section__header">
-              <h2>Select a Direction to Explore</h2>
-              <p>Each direction features authentic heritage, nature, coastlines, and shrines.</p>
+              <h2>{t('dashboardSection.exploreDirections', 'Explore by Region or Browse All Destinations')}</h2>
+              <p>{t('dashboardSection.exploreDirectionsDesc', 'Karnataka is divided into four scenic travel zones. Select a direction below to filter, or browse all 36 places directly.')}</p>
             </div>
 
-<<<<<<< HEAD
-        {/* Saved Trips */}
-        <section className="dashboard__section">
-          <div className="dashboard__section-header">
-            <h2>{t('dashboard.itineraries')}</h2>
-            <Link to="/plan/preferences" className="btn btn--primary btn--sm" onClick={() => resetTrip()}>+ New Trip</Link>
-          </div>
-          {loadingTrips ? (
-            <div className="dashboard__empty-block">
-              <p>Loading your saved trips…</p>
-            </div>
-          ) : savedTrips.length === 0 ? (
-            <div className="dashboard__empty-block">
-              <p>{t('itinerary.noItineraries')}</p>
-              <p>Start planning a trip to see it here.</p>
-            </div>
-          ) : (
-            <div className="dashboard__itinerary-list">
-              {savedTrips.map(trip => (
-                <motion.div
-                  key={trip.id}
-                  className="dashboard__itinerary-card"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="dashboard__itinerary-header">
-                    <h4>{trip.trip_name}</h4>
-                    <span className="dashboard__itinerary-dates">
-                      {trip.trip_data?.preferences?.startDate || '—'} → {trip.trip_data?.preferences?.endDate || '—'}
-                    </span>
-                  </div>
-                  <p className="dashboard__itinerary-stops">
-                    {trip.destinations_count} stops • ₹{Number(trip.total_budget).toLocaleString()}
-                    {trip.status === 'draft' && <span style={{ marginLeft: '0.5rem', color: 'var(--color-gold)' }}>(Draft)</span>}
-                  </p>
-                  <div className="dashboard__itinerary-actions">
-                    <button className="btn btn--outline btn--sm" onClick={() => handleResumeTrip(trip)}>
-                      Resume / View
-                    </button>
-                    <button className="btn btn--outline btn--sm" onClick={() => handleDeleteTrip(trip.id)}>
-                      {t('itinerary.delete')}
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-=======
             <div className="compass-grid">
               {regionsList.map(reg => {
                 const regInfo = REGIONAL_IMAGES[reg.key];
@@ -276,22 +308,31 @@ export default function DashboardPage() {
                     onClick={() => setSelectedRegion(reg.key)}
                   >
                     <div className="compass-card__img-wrap">
-                      <img src={regInfo.image} alt={reg.name} className="compass-card__img" />
+                      <img
+                        src={regInfo?.image}
+                        alt={reg.name}
+                        className="compass-card__img"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.onerror = null;
+                          target.src = KARNATAKA_FALLBACK_IMAGE;
+                        }}
+                      />
                       <div className="compass-card__badge">
                         <span>{reg.icon}</span>
-                        <span>{reg.count} Places</span>
+                        <span>{t('dashboardSection.placesCount', { count: reg.count, defaultValue: `${reg.count} Places` })}</span>
                       </div>
                     </div>
                     <div className="compass-card__content">
                       <span className="compass-card__kannada">{reg.kannadaName}</span>
                       <h3 className="compass-card__title">{reg.name}</h3>
-                      <p className="compass-card__desc">{regInfo.subtitle}</p>
+                      <p className="compass-card__desc">{regInfo?.subtitle}</p>
                       <div className="compass-card__districts">
-                        <strong>Districts: </strong>
-                        <span>{regInfo.districts.join(', ')}</span>
+                        <strong>{t('dashboardSection.districts', 'Districts')}: </strong>
+                        <span>{regInfo?.districts?.join(', ')}</span>
                       </div>
                       <button className="btn btn--outline btn--sm compass-card__btn">
-                        Explore {reg.name} →
+                        {t('dashboardSection.exploreRegion', { name: reg.name, defaultValue: `Explore ${reg.name} →` })}
                       </button>
                     </div>
                   </motion.div>
@@ -299,155 +340,181 @@ export default function DashboardPage() {
               })}
             </div>
           </div>
-        ) : (
-          /* ================= REGION DESTINATION LISTING ================= */
-          <div className="region-listing-section">
-            {/* Return Bar */}
-            <div className="region-listing-nav">
-              <button
-                className="btn btn--outline btn--sm"
-                onClick={() => setSelectedRegion('all')}
-              >
-                ← Back to 4 Directions Dashboard
-              </button>
+        )}
 
-              <div className="region-tabs">
-                {regionsList.map(reg => (
-                  <button
-                    key={reg.key}
-                    className={`region-tab-btn ${selectedRegion === reg.key ? 'region-tab-btn--active' : ''}`}
-                    onClick={() => setSelectedRegion(reg.key)}
-                  >
-                    {reg.icon} {reg.name} ({reg.count})
-                  </button>
-                ))}
-              </div>
+        {/* ================= DESTINATION LISTING & FILTERS ================= */}
+        <div className="region-listing-section">
+          {/* Region Tabs Navigation */}
+          <div className="region-listing-nav">
+            <button
+              className={`btn btn--sm ${selectedRegion === 'all' ? 'btn--primary' : 'btn--outline'}`}
+              onClick={() => setSelectedRegion('all')}
+            >
+              🗺️ {t('dashboardSection.allKarnataka', 'All Karnataka')} ({destinations.length})
+            </button>
+
+            <div className="region-tabs">
+              {regionsList.map(reg => (
+                <button
+                  key={reg.key}
+                  className={`region-tab-btn ${selectedRegion === reg.key ? 'region-tab-btn--active' : ''}`}
+                  onClick={() => setSelectedRegion(reg.key)}
+                >
+                  {reg.icon} {reg.name} ({reg.count})
+                </button>
+              ))}
             </div>
+          </div>
 
-            {/* Region Banner */}
+          {/* Region Banner if specific region is active */}
+          {selectedRegion !== 'all' && (
             <div className="region-banner">
               <h2>{REGIONAL_IMAGES[selectedRegion]?.title}</h2>
               <p>{REGIONAL_IMAGES[selectedRegion]?.subtitle}</p>
             </div>
+          )}
 
-            {/* Filters Bar */}
-            <div className="listing-filters-bar">
-              <div className="listing-search-wrap">
-                <span>🔍</span>
-                <input
-                  type="text"
-                  placeholder="Search destinations, temples, waterfalls, districts..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="form-input listing-search-input"
-                />
-              </div>
-
-              <div className="listing-category-chips">
-                {[
-                  { key: 'all', label: 'All Categories' },
-                  { key: 'heritage', label: '🏛️ Heritage' },
-                  { key: 'hills', label: '⛰️ Hills' },
-                  { key: 'beaches', label: '🏖️ Beaches' },
-                  { key: 'waterfalls', label: '💧 Waterfalls' },
-                  { key: 'wildlife', label: '🐾 Wildlife' },
-                ].map(cat => (
-                  <button
-                    key={cat.key}
-                    className={`chip ${activeCategory === cat.key ? 'chip--selected' : ''}`}
-                    onClick={() => setActiveCategory(cat.key)}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
+          {/* Filters Bar: Search & Category Chips (Requirement 6) */}
+          <div className="listing-filters-bar">
+            <div className="listing-search-wrap">
+              <span aria-hidden="true">🔍</span>
+              <input
+                type="text"
+                placeholder={t('dashboardSection.searchPlaceholder', 'Search destinations, temples, waterfalls, districts...')}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="form-input listing-search-input"
+                aria-label="Search destinations"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-gray-400)', fontSize: '14px' }}
+                  aria-label="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            {/* Destination Cards Grid */}
-            <div className="destinations-grid">
-              {filteredDestinations.map(dest => {
-                const selected = isDestinationSelected(dest.id);
-                const authenticImage = DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl;
-
-                return (
-                  <motion.div
-                    key={dest.id}
-                    className={`dest-card ${selected ? 'dest-card--selected' : ''}`}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="dest-card__media">
-                      <img
-                        src={authenticImage}
-                        alt={dest.name}
-                        className="dest-card__img"
-                        loading="lazy"
-                        onError={e => {
-                          (e.target as HTMLImageElement).src = `https://images.unsplash.com/photo-1600100561600-44d5e3cba921?w=600&q=80`;
-                        }}
-                      />
-                      <span className="dest-card__category-badge">
-                        {dest.category.toUpperCase()}
-                      </span>
-                      {selected && (
-                        <span className="dest-card__selected-pill">
-                          ✓ Added to Trip
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="dest-card__body">
-                      <div className="dest-card__meta">
-                        <span className="dest-card__district">📍 {dest.district}</span>
-                        <span className="dest-card__duration">⏱️ {dest.recommendedDuration}</span>
-                      </div>
-
-                      <h3 className="dest-card__title">{dest.name}</h3>
-                      <p className="dest-card__desc">{dest.shortDescription}</p>
-
-                      <div className="dest-card__fee-info">
-                        <span>Entry: </span>
-                        <strong>
-                          {dest.entryFee?.indianAdult !== null && dest.entryFee?.indianAdult !== undefined
-                            ? dest.entryFee.indianAdult === 0
-                              ? 'Free'
-                              : `₹${dest.entryFee.indianAdult} / adult`
-                            : 'Nominal'}
-                        </strong>
-                      </div>
-
-                      <div className="dest-card__actions">
-                        <button
-                          type="button"
-                          className="btn btn--outline btn--sm"
-                          onClick={() => setActiveDetailDest(dest)}
-                        >
-                          📖 View Details
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn btn--sm ${selected ? 'btn--danger-outline' : 'btn--primary'}`}
-                          onClick={() => handleToggleDestination(dest)}
-                        >
-                          {selected ? '✕ Remove' : '+ Add to Trip'}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+            <div className="listing-category-chips">
+              {[
+                { key: 'all', label: t('dashboardSection.allCategories', 'All Categories') },
+                { key: 'heritage', label: t('dashboardSection.heritage', '🏛️ Heritage') },
+                { key: 'hills', label: t('dashboardSection.hills', '⛰️ Hills') },
+                { key: 'nature', label: t('dashboardSection.nature', '🌿 Nature') },
+                { key: 'beaches', label: t('dashboardSection.beaches', '🏖️ Beaches') },
+                { key: 'waterfalls', label: t('dashboardSection.waterfalls', '💧 Waterfalls') },
+                { key: 'wildlife', label: t('dashboardSection.wildlife', '🐾 Wildlife') },
+              ].map(cat => (
+                <button
+                  key={cat.key}
+                  className={`category-chip ${activeCategory === cat.key ? 'category-chip--active' : ''}`}
+                  onClick={() => setActiveCategory(cat.key)}
+                >
+                  {cat.label}
+                </button>
+              ))}
             </div>
-
-            {filteredDestinations.length === 0 && (
-              <div className="empty-listing">
-                <p>No destinations found matching your search. Try adjusting your query or category filters.</p>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* ================= DEDICATED DESTINATION DETAIL MODAL ================= */}
+          {/* Destination Cards Grid (Requirement 1, 6) */}
+          <div className="destinations-cards-grid">
+            {filteredDestinations.map(dest => {
+              const selected = isDestinationSelected(dest.id);
+              const img = DESTINATION_IMAGES[dest.id]?.url || dest.imageUrl || KARNATAKA_FALLBACK_IMAGE;
+
+              return (
+                <motion.div
+                  key={dest.id}
+                  className={`destination-card-v2 ${selected ? 'destination-card-v2--selected' : ''}`}
+                  layout
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <div
+                    className="dest-card-v2__img-wrap"
+                    onClick={() => setActiveDetailDest(dest)}
+                    title="Click to view destination details"
+                  >
+                    <img
+                      src={img}
+                      alt={dest.name}
+                      className="dest-card-v2__img"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.onerror = null;
+                        target.src = KARNATAKA_FALLBACK_IMAGE;
+                      }}
+                    />
+                    <span className="dest-card-v2__cat-badge">{dest.category.toUpperCase()}</span>
+                    {selected && <div className="dest-card-v2__selected-check">{t('dashboardSection.added', '✓ Added')}</div>}
+                  </div>
+
+                  <div className="dest-card-v2__content">
+                    <div className="dest-card-v2__header">
+                      <div>
+                        <span className="dest-card-v2__kannada">{dest.kannadaName}</span>
+                        <h3 className="dest-card-v2__title">{dest.name}</h3>
+                        <span className="dest-card-v2__district">📍 {dest.district} District • {dest.region.toUpperCase()}</span>
+                      </div>
+                    </div>
+
+                    <p className="dest-card-v2__desc">{dest.shortDescription}</p>
+
+                    <div className="dest-card-v2__meta-row">
+                      <span>⏱️ {dest.recommendedDuration}</span>
+                      <span>🎟️ ₹{dest.entryFee.indianAdult ?? 0}</span>
+                      <span>🌤️ {dest.bestSeason}</span>
+                    </div>
+
+                    <div className="dest-card-v2__actions">
+                      <button
+                        type="button"
+                        className="btn btn--outline btn--sm"
+                        onClick={() => setActiveDetailDest(dest)}
+                      >
+                        {t('dashboardSection.detailsAndInfo', 'Details & Info')}
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn--sm ${selected ? 'btn--danger-outline' : 'btn--primary'}`}
+                        onClick={() => handleToggleDestination(dest)}
+                      >
+                        {selected ? t('dashboardSection.removeFromTrip', '✕ Remove') : t('dashboardSection.addToTrip', '+ Add to Trip')}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {filteredDestinations.length === 0 && (
+            <div className="empty-search-state" style={{ textAlign: 'center', padding: 'var(--space-12)', background: 'var(--color-white)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-gray-200)', marginBottom: 'var(--space-12)' }}>
+              <span style={{ fontSize: '3rem', display: 'block', marginBottom: 'var(--space-2)' }}>🔍</span>
+              <h3 style={{ color: 'var(--color-forest-dark)', marginBottom: 'var(--space-2)' }}>{t('dashboardSection.noDestinations', 'No destinations found')}</h3>
+              <p style={{ color: 'var(--color-gray-600)', marginBottom: 'var(--space-4)' }}>
+                {t('dashboardSection.noDestinationsDesc', 'No places match your search query or selected filters.')}
+              </p>
+              <button
+                className="btn btn--outline btn--sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveCategory('all');
+                  setSelectedRegion('all');
+                }}
+              >
+                {t('dashboardSection.clearFilters', 'Clear All Filters')}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ================= DESTINATION DETAILS MODAL (Requirement 6) ================= */}
         <AnimatePresence>
           {activeDetailDest && (
             <motion.div
@@ -467,84 +534,76 @@ export default function DashboardPage() {
                 <button
                   className="detail-modal-close"
                   onClick={() => setActiveDetailDest(null)}
-                  aria-label="Close"
+                  aria-label="Close details"
                 >
                   ✕
                 </button>
 
                 <div className="detail-modal-hero">
                   <img
-                    src={DESTINATION_IMAGES[activeDetailDest.id]?.url || activeDetailDest.imageUrl}
+                    src={DESTINATION_IMAGES[activeDetailDest.id]?.url || activeDetailDest.imageUrl || KARNATAKA_FALLBACK_IMAGE}
                     alt={activeDetailDest.name}
                     className="detail-modal-hero-img"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      target.onerror = null;
+                      target.src = KARNATAKA_FALLBACK_IMAGE;
+                    }}
                   />
                   <div className="detail-modal-hero-overlay">
-                    <span className="dest-card__category-badge">
-                      {activeDetailDest.category.toUpperCase()} • {activeDetailDest.region.toUpperCase()} KARNATAKA
+                    <span className="modal-kannada" style={{ color: 'var(--color-gold-light)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+                      {activeDetailDest.kannadaName}
                     </span>
-                    <h2>{activeDetailDest.name}</h2>
-                    <p>📍 {activeDetailDest.district} District</p>
+                    <h2 style={{ color: 'var(--color-white)', margin: '4px 0' }}>{activeDetailDest.name}</h2>
+                    <p style={{ color: 'rgba(255, 255, 255, 0.9)', margin: 0, fontSize: 'var(--text-sm)' }}>
+                      📍 {activeDetailDest.district} District • {activeDetailDest.region.toUpperCase()} KARNATAKA
+                    </p>
                   </div>
                 </div>
 
                 <div className="detail-modal-content">
-                  {/* Key Quick Facts */}
                   <div className="detail-facts-grid">
                     <div className="detail-fact-item">
-                      <span>⏱️ Duration</span>
+                      <span>🏷️ Category</span>
+                      <strong>{activeDetailDest.category.toUpperCase()}</strong>
+                    </div>
+                    <div className="detail-fact-item">
+                      <span>⏱️ Recommended</span>
                       <strong>{activeDetailDest.recommendedDuration}</strong>
+                    </div>
+                    <div className="detail-fact-item">
+                      <span>🎟️ Entry Fee</span>
+                      <strong>
+                        {activeDetailDest.entryFee.indianAdult
+                          ? `₹${activeDetailDest.entryFee.indianAdult} (Adult)`
+                          : 'Free Entry'}
+                      </strong>
                     </div>
                     <div className="detail-fact-item">
                       <span>🌤️ Best Season</span>
                       <strong>{activeDetailDest.bestSeason}</strong>
                     </div>
-                    <div className="detail-fact-item">
-                      <span>🕒 Opening Hours</span>
-                      <strong>
-                        {activeDetailDest.openingHours?.open
-                          ? `${activeDetailDest.openingHours.open} - ${activeDetailDest.openingHours.close || 'Closing'}`
-                          : 'Open round the clock'}
-                      </strong>
-                    </div>
-                    <div className="detail-fact-item">
-                      <span>🎟️ Indian Adult</span>
-                      <strong>
-                        {activeDetailDest.entryFee?.indianAdult !== null
-                          ? `₹${activeDetailDest.entryFee.indianAdult}`
-                          : 'Free / Included'}
-                      </strong>
-                    </div>
                   </div>
 
-                  {/* History & Significance */}
                   <div className="detail-section">
-                    <h3>🏛️ Historical Background</h3>
+                    <h3>📜 History & Heritage</h3>
                     <p>{activeDetailDest.detailedHistory}</p>
                   </div>
 
                   <div className="detail-section">
-                    <h3>✨ Cultural & Architectural Significance</h3>
+                    <h3>🏛️ Cultural Significance</h3>
                     <p>{activeDetailDest.culturalSignificance}</p>
                   </div>
 
-                  {/* Key Highlights */}
-                  {activeDetailDest.specialAttractions?.length > 0 && (
-                    <div className="detail-section">
-                      <h3>🌟 Key Highlights & Attractions</h3>
-                      <ul className="detail-highlights-list">
-                        {activeDetailDest.specialAttractions.map((att, i) => (
-                          <li key={i}>{att}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Visitor Information */}
                   <div className="detail-section">
-                    <h3>ℹ️ Practical Visitor Information</h3>
-                    <p><strong>Accessibility:</strong> {activeDetailDest.accessibility || 'Standard terrain, comfortable walking shoes advised.'}</p>
-                    {activeDetailDest.entryFee?.notes && (
-                      <p><strong>Entry Notes:</strong> {activeDetailDest.entryFee.notes}</p>
+                    <h3>ℹ️ Practical Visitor Guidance</h3>
+                    <p>
+                      <strong>Opening Hours: </strong>
+                      {activeDetailDest.openingHours.open || '06:00 AM'} to {activeDetailDest.openingHours.close || '06:00 PM'}
+                      {activeDetailDest.openingHours.closedOn ? ` (Closed on ${activeDetailDest.openingHours.closedOn})` : ''}
+                    </p>
+                    {activeDetailDest.specialAttractions?.length > 0 && (
+                      <p><strong>Highlights:</strong> {activeDetailDest.specialAttractions.join(', ')}</p>
                     )}
                     {activeDetailDest.nearbyAttractions?.length > 0 && (
                       <p><strong>Nearby Places:</strong> {activeDetailDest.nearbyAttractions.join(', ')}</p>
@@ -574,11 +633,10 @@ export default function DashboardPage() {
                 </div>
               </motion.div>
             </motion.div>
->>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
           )}
         </AnimatePresence>
 
-        {/* ================= REVIEW SELECTED PLACES MODAL ================= */}
+        {/* ================= REVIEW SELECTED PLACES MODAL (Requirement 7) ================= */}
         <AnimatePresence>
           {showReviewModal && (
             <motion.div
@@ -598,52 +656,82 @@ export default function DashboardPage() {
                 <button
                   className="detail-modal-close"
                   onClick={() => setShowReviewModal(false)}
+                  aria-label="Close review"
                 >
                   ✕
                 </button>
 
                 <div style={{ padding: 'var(--space-6)' }}>
                   <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--color-forest-dark)', marginBottom: 'var(--space-2)' }}>
-                    ✅ Selected Destinations ({selectedCount})
+                    ✅ {t('dashboardSection.reviewModal.title', { count: selectedCount, defaultValue: `Selected Destinations (${selectedCount})` })}
                   </h2>
-                  <p style={{ color: 'var(--color-gray-600)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)' }}>
-                    All these destinations will be sequenced into your day-wise itinerary and itemized in your budget. You can add more than 5 places without any restrictions!
+                  <p style={{ color: 'var(--color-gray-600)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)' }}>
+                    {t('dashboardSection.reviewModal.desc', 'Review your selected destinations. There is no 5-place limit—select as many as you wish. All places are automatically sequenced and budgeted into your itinerary.')}
                   </p>
+
+                  {/* Feasibility snapshot in modal */}
+                  <div style={{ background: 'rgba(45, 90, 61, 0.05)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(45, 90, 61, 0.15)', marginBottom: 'var(--space-5)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <strong style={{ color: 'var(--color-forest-dark)', fontSize: 'var(--text-sm)' }}>
+                        {t('dashboardSection.reviewModal.routeAnalysis', { km: feasibility.totalEstimatedKm, hours: feasibility.totalEstimatedTravelHours, defaultValue: `Route Analysis: ~${feasibility.totalEstimatedKm} km total • ~${feasibility.totalEstimatedTravelHours} hrs transit` })}
+                      </strong>
+                      <span className={`feasibility-badge feasibility-badge--${feasibility.status}`}>
+                        {feasibility.status === 'optimal' ? 'Well Paced' : feasibility.status === 'moderate' ? 'Moderate' : 'Pacing Alert'}
+                      </span>
+                    </div>
+                    {feasibility.warnings.length > 0 && (
+                      <p style={{ fontSize: 'var(--text-xs)', color: '#9a3412', margin: '4px 0 0 0' }}>
+                        ⚠️ {feasibility.warnings[0]}
+                      </p>
+                    )}
+                  </div>
 
                   <div className="review-places-list">
                     {trip.selectedDestinations.map(d => (
                       <div key={d.destinationId} className="review-place-row">
-                        <img src={d.imageUrl} alt={d.name} className="review-place-thumb" />
+                        <img
+                          src={d.imageUrl || KARNATAKA_FALLBACK_IMAGE}
+                          alt={d.name}
+                          className="review-place-thumb"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.onerror = null;
+                            target.src = KARNATAKA_FALLBACK_IMAGE;
+                          }}
+                        />
                         <div className="review-place-info">
                           <h4>{d.name}</h4>
                           <p>{d.reason} • {d.duration}</p>
                         </div>
                         <button
+                          type="button"
                           className="btn btn--outline btn--sm"
-                          style={{ borderColor: 'var(--color-gray-300)', color: '#c2410c' }}
+                          style={{ borderColor: '#fca5a5', color: '#c2410c' }}
                           onClick={() => dispatch({ type: 'REMOVE_DESTINATION', payload: d.destinationId })}
                         >
-                          Remove
+                          {t('dashboardSection.reviewModal.remove', 'Remove')}
                         </button>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-6)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
                     <button
+                      type="button"
                       className="btn btn--outline"
                       onClick={() => setShowReviewModal(false)}
                     >
-                      + Add More Destinations
+                      {t('dashboardSection.reviewModal.addMore', '+ Add More Destinations')}
                     </button>
                     <button
+                      type="button"
                       className="btn btn--primary"
                       onClick={() => {
                         setShowReviewModal(false);
                         handleProceedToTransport();
                       }}
                     >
-                      Proceed to Transportation (Step 4) →
+                      {t('dashboardSection.nextTransport', 'Next: Choose Transportation (Step 3) →')}
                     </button>
                   </div>
                 </div>
@@ -652,7 +740,7 @@ export default function DashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* ================= FLOATING SELECTION DOCK ================= */}
+        {/* ================= FLOATING SELECTION DOCK (Requirement 3) ================= */}
         {selectedCount > 0 && (
           <motion.div
             className="selection-floating-dock"
@@ -663,8 +751,8 @@ export default function DashboardPage() {
             <div className="dock-left">
               <span className="dock-count-badge">{selectedCount}</span>
               <div>
-                <strong>{selectedCount} Destination{selectedCount > 1 ? 's' : ''} Selected</strong>
-                <p>No 5-place limit — add as many Karnataka destinations as you like</p>
+                <strong>{t('dashboardSection.selectedCount', { count: selectedCount, defaultValue: `${selectedCount} Destination${selectedCount > 1 ? 's' : ''} Selected` })}</strong>
+                <p>{t('dashboardSection.noLimitNotice', 'No 5-destination limit — explore freely across all Karnataka regions')}</p>
               </div>
             </div>
 
@@ -674,14 +762,14 @@ export default function DashboardPage() {
                 className="btn btn--outline btn--sm dock-review-btn"
                 onClick={() => setShowReviewModal(true)}
               >
-                📋 Review Selected Places
+                📋 {t('dashboardSection.reviewSelected', 'Review Selected Places')} ({selectedCount})
               </button>
               <button
                 type="button"
                 className="btn btn--primary btn--lg dock-next-btn"
                 onClick={handleProceedToTransport}
               >
-                Next: Choose Transportation (Step 4) →
+                {t('dashboardSection.nextTransport', 'Next: Choose Transportation (Step 3) →')}
               </button>
             </div>
           </motion.div>

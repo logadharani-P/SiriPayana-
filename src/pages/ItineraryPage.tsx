@@ -77,10 +77,12 @@ function calculateBudget(trip: ReturnType<typeof useTrip>['trip']): BudgetBreakd
     accommodation,
     food,
     entryFees,
+    destinationFeesBreakdown: [],
     activities,
     packageFee: pkgFee,
     miscellaneous: misc,
     contingency,
+    taxes: Math.round((accommodation + outbound + returnFare + local + pkgFee) * 0.05),
     total,
     perPerson: Math.round(total / Math.max(travelers, 1)),
   };

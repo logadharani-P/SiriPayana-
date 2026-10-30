@@ -7,11 +7,7 @@ import './AuthPage.css';
 
 export default function AuthPage() {
   const { t } = useTranslation();
-<<<<<<< HEAD
-  const { signIn, signUp, showToast } = useApp();
-=======
-  const { login, register, dispatch, showToast } = useApp();
->>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
+  const { signIn, signUp, loginDemoUser, showToast } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const isLogin = location.pathname === '/signin' || location.pathname === '/login';
@@ -51,7 +47,7 @@ export default function AuthPage() {
           return;
         }
         showToast('Signed in successfully!', 'success');
-        navigate('/plan/preferences');
+        navigate('/onboarding');
       } else {
         const { error } = await signUp(name, email, password);
         if (error) {
@@ -60,7 +56,7 @@ export default function AuthPage() {
           return;
         }
         showToast('Account created successfully!', 'success');
-        navigate('/plan/preferences');
+        navigate('/onboarding');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
@@ -69,24 +65,11 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
-<<<<<<< HEAD
-=======
-    setTimeout(() => navigate('/onboarding'), 400);
   };
 
   const handleDemoGuestLogin = () => {
-    dispatch({
-      type: 'LOGIN',
-      payload: {
-        id: 'demo-user-1',
-        name: 'Karnataka Explorer',
-        email: 'explorer@siripayana.karnataka.gov.in',
-        createdAt: new Date().toISOString(),
-      },
-    });
-    showToast('Signed in with Demo Guest session', 'success');
+    loginDemoUser('Karnataka Explorer', 'explorer@siripayana.karnataka.gov.in');
     navigate('/onboarding');
->>>>>>> 8c2d4d8 (Enhancement of SiriPayana)
   };
 
   return (

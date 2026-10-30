@@ -22,9 +22,13 @@ export default function HotelPage() {
     [trip.selectedDestinations]
   );
 
+  const currentBudgetRange: 'economy' | 'mid' | 'premium' =
+    trip.preferences.budgetRange ||
+    (trip.preferences.travelStyle === 'budget' ? 'economy' : trip.preferences.travelStyle === 'premium' ? 'premium' : 'mid');
+
   const recommendedHotels = useMemo(
-    () => getRecommendedHotels(selectedDestinationIds, trip.preferences.budgetRange || 'mid'),
-    [selectedDestinationIds, trip.preferences.budgetRange]
+    () => getRecommendedHotels(selectedDestinationIds, currentBudgetRange),
+    [selectedDestinationIds, currentBudgetRange]
   );
 
   const isHotelSelected = (hotelId: string) => {
@@ -70,11 +74,11 @@ export default function HotelPage() {
       <div className="plan-page__header">
         <div className="container">
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-gold-light)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)', fontWeight: 'var(--font-bold)' }}>
-            Step 5 • Accommodation & Stays
+            {t('hotelsSection.stepBadge', 'STEP 4 • ACCOMMODATION & STAYS')}
           </span>
-          <h1>🏨 Hotel & Resort Booking</h1>
+          <h1>🏨 {t('hotelsSection.title', 'Hotel & Resort Booking')}</h1>
           <p>
-            Curated stays near your selected destinations: KSTDC Mayura Government hotels, Jungle Lodges, and boutique heritage stays.
+            {t('hotelsSection.subtitle', 'Curated stays near your selected destinations: KSTDC Mayura Government hotels, Jungle Lodges, and boutique heritage stays.')}
           </p>
         </div>
       </div>
@@ -86,19 +90,19 @@ export default function HotelPage() {
           {/* Reservation Calculation Summary Banner */}
           <div className="hotel-calc-banner">
             <div className="hotel-calc-item">
-              <span>📅 Duration</span>
-              <strong>{duration} Days ({requiredNights} Nights)</strong>
+              <span>📅 {t('hotelsSection.duration', 'Duration')}</span>
+              <strong>{t('hotelsSection.durationVal', { days: duration, nights: requiredNights, defaultValue: `${duration} Days (${requiredNights} Nights)` })}</strong>
             </div>
             <div className="hotel-calc-item">
-              <span>👥 Travellers</span>
-              <strong>{travelers} People ({trip.preferences.adults} Adults{trip.preferences.children > 0 ? `, ${trip.preferences.children} Children` : ''})</strong>
+              <span>👥 {t('hotelsSection.travellers', 'Travellers')}</span>
+              <strong>{t('hotelsSection.travellersVal', { total: travelers, adults: trip.preferences.adults, children: trip.preferences.children, defaultValue: `${travelers} People (${trip.preferences.adults} Adults, ${trip.preferences.children} Children)` })}</strong>
             </div>
             <div className="hotel-calc-item">
-              <span>🛏️ Rooms Needed</span>
-              <strong>{requiredRooms} Room{requiredRooms > 1 ? 's' : ''} (Twin Sharing)</strong>
+              <span>🛏️ {t('hotelsSection.rooms', 'Rooms Needed')}</span>
+              <strong>{t('hotelsSection.roomsVal', { rooms: requiredRooms, defaultValue: `${requiredRooms} Rooms (Twin Sharing)` })}</strong>
             </div>
             <div className="hotel-calc-item">
-              <span>🏷️ Travel Style</span>
+              <span>🏷️ {t('hotelsSection.budgetTier', 'Travel Style')}</span>
               <strong>{(trip.preferences.travelStyle || 'Comfortable').toUpperCase()}</strong>
             </div>
           </div>
@@ -218,10 +222,10 @@ export default function HotelPage() {
           {/* Navigation Actions */}
           <div className="plan-page__actions">
             <button className="btn btn--outline" onClick={handleBack}>
-              ← Back to Transport
+              {t('hotelsSection.back', '← Back to Transport')}
             </button>
             <button className="btn btn--primary btn--lg" onClick={handleContinue}>
-              Proceed to Budget Summary (Step 6) →
+              {t('hotelsSection.proceedBudget', 'Proceed to Budget Summary (Step 5) →')}
             </button>
           </div>
         </motion.div>
